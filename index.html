@@ -1807,12 +1807,12 @@ function obbyLoop() {
   // Player movement
   const speed = 0.13;
   let moveX = 0, moveZ = 0;
-  if (obbyKeys['KeyW']||obbyKeys['ArrowUp']) moveZ -= speed;
-  if (obbyKeys['KeyS']||obbyKeys['ArrowDown']) moveZ += speed;
+  if (obbyKeys['KeyW']||obbyKeys['ArrowUp']) moveZ += speed;
+  if (obbyKeys['KeyS']||obbyKeys['ArrowDown']) moveZ -= speed;
   if (obbyKeys['KeyA']||obbyKeys['ArrowLeft']) moveX -= speed;
   if (obbyKeys['KeyD']||obbyKeys['ArrowRight']) moveX += speed;
   if (obbyKeys['Space'] && !obbyJumping) { obbyVelocity.y = 0.2; obbyJumping = true; }
-  if (joystickActive) { moveX += joystickDX * speed; moveZ += joystickDZ * speed; }
+  if (joystickActive) { moveX += joystickDX * speed; moveZ -= joystickDZ * speed; }
 
   if (Math.abs(moveX)>0.001 || Math.abs(moveZ)>0.001) {
     obbyPlayer.rotation.y = Math.atan2(moveX, moveZ);

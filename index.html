@@ -188,6 +188,44 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
 #gameChatBox .chat-msg { font-size:12px; margin:2px 0; }
 
 @media (pointer:coarse) { #mobileControls { display:block; } }
+
+/* Obby portal */
+.portal-obby { background:linear-gradient(135deg,#8b5cf6,#ec4899); border-color:#d8b4fe; }
+
+/* Obby HUD */
+#obbyHud {
+  position:fixed; top:15px; right:20px; z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #7c3aed; border-radius:14px; padding:10px 18px;
+  font-size:16px; display:none;
+}
+#obbyHud .biomes-display { font-size:18px; }
+
+/* Obby mobile controls */
+#obbyMobileControls { display:none; position:fixed; bottom:0; left:0; width:100%; height:200px; z-index:16; pointer-events:none; }
+#obbyJoystickArea {
+  position:absolute; bottom:30px; left:30px; width:120px; height:120px;
+  border-radius:50%; background:rgba(124,58,237,.3); border:3px solid rgba(124,58,237,.5);
+  pointer-events:auto; touch-action:none;
+}
+#obbyJoystickKnob {
+  position:absolute; width:50px; height:50px; border-radius:50%;
+  background:rgba(167,139,250,.7); top:35px; left:35px; pointer-events:none;
+}
+#obbyJumpBtn {
+  position:absolute; bottom:40px; right:30px; width:80px; height:80px; border-radius:50%;
+  background:rgba(52,211,153,.4); border:3px solid rgba(52,211,153,.6);
+  font-family:'Fredoka One',cursive; font-size:14px; color:#fff; pointer-events:auto;
+  display:flex; align-items:center; justify-content:center; touch-action:none;
+}
+@media (pointer:coarse) { #obbyMobileControls { display:block; } }
+
+/* Obby complete overlay */
+#obbyCompleteOverlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  z-index:50; background:rgba(0,0,0,.75); flex-direction:column;
+  align-items:center; justify-content:center;
+}
+
 @media (max-width:500px) {
   .portal-grid { grid-template-columns:1fr 1fr; gap:10px; padding:12px; max-width:100%; }
   .portal-btn { padding:16px 10px; font-size:14px; }
@@ -234,6 +272,7 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
     <div class="portal-btn portal-avatar" onclick="showScreen('avatar')"><span class="emoji">👻</span>Avatar Editor</div>
     <div class="portal-btn portal-shop" onclick="showScreen('shop')"><span class="emoji">🛒</span>Item Shop</div>
     <div class="portal-btn portal-editor" onclick="showScreen('editor')"><span class="emoji">🔧</span>Level Editor</div>
+    <div class="portal-btn portal-obby" onclick="showScreen('obby')" style="grid-column:1/-1"><span class="emoji">🏃</span>Obby Course</div>
   </div>
   <div id="chatBox">
     <div class="chat-msg"><span class="chat-npc">🤖 Boo Bot:</span> Welcome to Mini Boo! Pick a door!</div>
@@ -310,6 +349,35 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
   </div>
 </div>
 
+<!-- SCREEN 7: Obby -->
+<div id="obbyScreen" class="screen">
+  <button class="btn btn-purple btn-sm btn-back" onclick="exitObby()">← Lobby</button>
+  <div id="obbyHud">
+    <div>👻 <span id="obbyUser">Player</span></div>
+    <div class="biomes-display">💎 <span id="obbyBiomesDisplay">100</span></div>
+    <div id="obbyTimer" style="color:#60a5fa">⏱ 0.0s</div>
+    <div id="obbyCheckpoints" style="color:#22c55e">🏁 0/3</div>
+  </div>
+  <div id="obbyMobileControls">
+    <div id="obbyJoystickArea"><div id="obbyJoystickKnob"></div></div>
+    <div id="obbyJumpBtn">JUMP</div>
+  </div>
+</div>
+
+<!-- Obby Complete Overlay -->
+<div id="obbyCompleteOverlay">
+  <div class="panel" style="text-align:center;max-width:380px;">
+    <div style="font-size:64px;margin-bottom:8px">🏆</div>
+    <h2 style="color:#fbbf24;font-size:36px;margin-bottom:8px">OBBY COMPLETE!</h2>
+    <p style="color:#a78bfa;font-size:18px;margin-bottom:4px">Time: <span id="obbyCompleteTime" style="color:#fbbf24">0s</span></p>
+    <p style="color:#34d399;font-size:16px;margin-bottom:20px">+100 💎 Biomes earned!</p>
+    <div>
+      <button class="btn btn-purple" onclick="exitObby()">← Lobby</button>
+      <button class="btn btn-green" onclick="restartObby()" style="margin-left:8px">🔄 Play Again</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================
 // GLOBAL STATE
@@ -323,6 +391,15 @@ let gameScene, gameCamera, gameRenderer, gamePlayer, gameRunning = false;
 let gameKeys = {}, gameVelocity = {x:0,y:0,z:0}, gameOrbs = [], gameObstacles = [];
 let gameScore = 0, gameJumping = false;
 let joystickActive = false, joystickDX = 0, joystickDZ = 0;
+
+// Obby state
+let obbyRunning = false, obbyComplete = false;
+let obbyScene, obbyCamera, obbyPlayer;
+let obbyVelocity = {x:0,y:0,z:0}, obbyJumping = false;
+let obbyKeys = {}, obbyAnimId;
+let obbyPlatforms = [], obbyParticleSystem = null;
+let obbyTimerStart = 0, obbyCheckpointReached = 0;
+let obbyCheckpointPos = [], obbyCheckpointsEarned = new Set();
 let editorGrid = [];
 const EDITOR_COLS = 20, EDITOR_ROWS = 15;
 let editorTool = 'ground';
@@ -408,6 +485,8 @@ function updateAllBiomes() {
   document.getElementById('hudBiomes').textContent = '💎 ' + b;
   document.getElementById('shopBiomes').textContent = '💎 ' + b;
   document.getElementById('gameBiomes').textContent = b;
+  const obd = document.getElementById('obbyBiomesDisplay');
+  if (obd) obd.textContent = b;
 }
 
 // ============================================
@@ -461,8 +540,10 @@ function showScreen(name) {
   if (name === 'shop') initShop();
   if (name === 'game') startGame();
   if (name === 'editor') initEditor();
+  if (name === 'obby') startObby();
 
   if (name !== 'game' && gameRunning) stopGame();
+  if (name !== 'obby' && obbyRunning) stopObby();
 }
 
 // ============================================
@@ -1480,6 +1561,430 @@ function buildCustomLevel(grid) {
 }
 
 // ============================================
+// OBBY (OBSTACLE COURSE)
+// ============================================
+const OBBY_PLATFORM_DEFS = [
+  // Start - big
+  {x:0,  y:2,   z:0,   w:6,   d:6,   type:'static', color:0x22c55e, ckpt:0, finish:false},
+  // Easy early platforms
+  {x:0,  y:2,   z:9,   w:4,   d:3,   type:'static', color:0x60a5fa, ckpt:0, finish:false},
+  {x:3,  y:2.5, z:17,  w:3.5, d:3,   type:'static', color:0xf472b6, ckpt:0, finish:false},
+  {x:-2, y:3,   z:25,  w:3,   d:2.5, type:'static', color:0xa78bfa, ckpt:0, finish:false},
+  // First moving platform
+  {x:0,  y:3.5, z:33,  w:3,   d:2.5, type:'moveX',  color:0xfbbf24, ckpt:0, finish:false, amp:4, spd:0.8},
+  // CHECKPOINT 1
+  {x:0,  y:4,   z:42,  w:5,   d:4,   type:'static', color:0x22c55e, ckpt:1, finish:false},
+  // Medium section
+  {x:4,  y:4.5, z:50,  w:2.5, d:2,   type:'static', color:0x60a5fa, ckpt:0, finish:false},
+  {x:0,  y:5,   z:58,  w:2.5, d:2,   type:'blink',  color:0xf59e0b, ckpt:0, finish:false},
+  {x:-3, y:5.5, z:66,  w:2.5, d:2,   type:'moveY',  color:0xc084fc, ckpt:0, finish:false, amp:1.5, spd:1},
+  {x:2,  y:5,   z:74,  w:2,   d:2,   type:'static', color:0x60a5fa, ckpt:0, finish:false},
+  // CHECKPOINT 2
+  {x:0,  y:5.5, z:83,  w:4.5, d:3.5, type:'static', color:0x22c55e, ckpt:2, finish:false},
+  // Hard section - smaller, faster
+  {x:3,  y:6,   z:92,  w:2,   d:1.5, type:'blink',  color:0xf59e0b, ckpt:0, finish:false},
+  {x:-2, y:6.5, z:100, w:2,   d:1.5, type:'moveX',  color:0xef4444, ckpt:0, finish:false, amp:5, spd:1.5},
+  {x:1,  y:7,   z:109, w:1.8, d:1.5, type:'static', color:0xa78bfa, ckpt:0, finish:false},
+  {x:-2, y:7.5, z:117, w:1.8, d:1.5, type:'blink',  color:0xf59e0b, ckpt:0, finish:false},
+  {x:2,  y:7,   z:126, w:1.8, d:1.5, type:'moveY',  color:0xc084fc, ckpt:0, finish:false, amp:2, spd:1.5},
+  // CHECKPOINT 3
+  {x:0,  y:7.5, z:135, w:4,   d:3.5, type:'static', color:0x22c55e, ckpt:3, finish:false},
+  // Final stretch - brutal
+  {x:3,  y:8,   z:144, w:1.5, d:1.2, type:'moveX',  color:0xef4444, ckpt:0, finish:false, amp:4, spd:2},
+  {x:-1, y:8.5, z:153, w:1.5, d:1.2, type:'blink',  color:0xf472b6, ckpt:0, finish:false},
+  // FINISH - golden
+  {x:0,  y:9,   z:163, w:6,   d:5,   type:'static', color:0xfbbf24, ckpt:0, finish:true}
+];
+
+function startObby() {
+  obbyRunning = true;
+  obbyComplete = false;
+  obbyCheckpointReached = 0;
+  obbyCheckpointsEarned = new Set();
+  obbyPlatforms = [];
+  obbyParticleSystem = null;
+  obbyVelocity = {x:0,y:0,z:0};
+  obbyJumping = false;
+  obbyTimerStart = Date.now();
+
+  document.getElementById('obbyUser').textContent = currentUser || 'Player';
+  document.getElementById('obbyTimer').textContent = '⏱ 0.0s';
+  document.getElementById('obbyCheckpoints').textContent = '🏁 0/3';
+  document.getElementById('obbyHud').style.display = 'block';
+  document.getElementById('obbyCompleteOverlay').style.display = 'none';
+  updateAllBiomes();
+
+  obbyScene = new THREE.Scene();
+  obbyScene.background = new THREE.Color(0x0b0320);
+  obbyScene.fog = new THREE.Fog(0x0b0320, 50, 150);
+
+  obbyCamera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 300);
+
+  // Lighting
+  obbyScene.add(new THREE.AmbientLight(0x4b1d96, 0.6));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+  sun.position.set(10,20,10);
+  obbyScene.add(sun);
+  const glow1 = new THREE.PointLight(0x8b5cf6, 1.2, 60);
+  glow1.position.set(0,10,50);
+  obbyScene.add(glow1);
+  const glow2 = new THREE.PointLight(0x06b6d4, 1, 60);
+  glow2.position.set(0,10,110);
+  obbyScene.add(glow2);
+
+  // Stars
+  const sv = [];
+  for (let i=0;i<1500;i++) sv.push((Math.random()-0.5)*220,(Math.random()-0.5)*80+20,Math.random()*220-20);
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(sv,3));
+  obbyScene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({color:0xffffff,size:0.14})));
+
+  // Lava plane
+  const lavaGeo = new THREE.PlaneGeometry(220,350);
+  const lavaMat = new THREE.MeshPhongMaterial({color:0xff3300,emissive:0xff2200,emissiveIntensity:0.9,transparent:true,opacity:0.92});
+  const lava = new THREE.Mesh(lavaGeo,lavaMat);
+  lava.rotation.x = -Math.PI/2;
+  lava.position.set(0,-9,80);
+  obbyScene.add(lava);
+  const lavaLight = new THREE.PointLight(0xff4400,0.8,40);
+  lavaLight.position.set(0,-5,80);
+  obbyScene.add(lavaLight);
+
+  // Build platforms
+  const cpPositions = [{x:0,y:3.5,z:0}]; // index 0 = start
+
+  OBBY_PLATFORM_DEFS.forEach(def => {
+    let mat;
+    if (def.ckpt > 0) {
+      mat = new THREE.MeshPhongMaterial({color:0x22c55e,emissive:0x16a34a,emissiveIntensity:0.8});
+      cpPositions.push({x:def.x,y:def.y+1.5,z:def.z});
+    } else if (def.finish) {
+      mat = new THREE.MeshPhongMaterial({color:0xfbbf24,emissive:0xd97706,emissiveIntensity:0.9});
+    } else if (def.type === 'blink') {
+      mat = new THREE.MeshPhongMaterial({color:def.color,emissive:def.color,emissiveIntensity:0.5,transparent:true,opacity:0.9});
+    } else {
+      mat = new THREE.MeshPhongMaterial({color:def.color,emissive:def.color,emissiveIntensity:0.3});
+    }
+
+    const geo = new THREE.BoxGeometry(def.w,0.5,def.d);
+    const mesh = new THREE.Mesh(geo,mat);
+    mesh.position.set(def.x,def.y,def.z);
+    obbyScene.add(mesh);
+
+    // Neon wireframe edge
+    if (!def.finish && def.ckpt === 0) {
+      const eMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(def.w+0.06,0.56,def.d+0.06),
+        new THREE.MeshBasicMaterial({color:def.color,wireframe:true,transparent:true,opacity:0.25})
+      );
+      eMesh.position.copy(mesh.position);
+      obbyScene.add(eMesh);
+    }
+
+    // Checkpoint glow light + label
+    if (def.ckpt > 0) {
+      const pl = new THREE.PointLight(0x22c55e,1.5,10);
+      pl.position.set(def.x,def.y+1,def.z);
+      obbyScene.add(pl);
+      obbyScene.add(makeTextSprite('✓ CP'+def.ckpt,def.x,def.y+1.8,def.z,'#ffffff',3,1.4));
+    }
+    if (def.finish) {
+      const pl = new THREE.PointLight(0xfbbf24,2,12);
+      pl.position.set(def.x,def.y+1,def.z);
+      obbyScene.add(pl);
+      obbyScene.add(makeTextSprite('🏆 FINISH',def.x,def.y+2,def.z,'#fbbf24',4.5,1.5));
+    }
+
+    obbyPlatforms.push({
+      mesh, mat,
+      type:def.type,
+      baseX:def.x, baseY:def.y, baseZ:def.z,
+      w:def.w, d:def.d,
+      amp:def.amp||0, spd:def.spd||0,
+      ckpt:def.ckpt, finish:def.finish,
+      blinkTimer:Math.random()*3, blinkState:true
+    });
+  });
+
+  obbyCheckpointPos = cpPositions;
+
+  // Player ghost
+  const av = getAvatar();
+  obbyPlayer = createGhostMesh(av);
+  obbyPlayer.position.set(0,3.5,0);
+  obbyScene.add(obbyPlayer);
+
+  // Controls
+  document.addEventListener('keydown', onObbyKeyDown);
+  document.addEventListener('keyup', onObbyKeyUp);
+  setupObbyMobileControls();
+
+  obbyLoop();
+}
+
+function makeTextSprite(text, x, y, z, fillColor, scaleX, scaleY) {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 80;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,256,80);
+  ctx.font = 'bold 30px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = fillColor;
+  ctx.fillText(text, 128, 40);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));
+  spr.scale.set(scaleX, scaleY, 1);
+  spr.position.set(x, y, z);
+  return spr;
+}
+
+function setupObbyMobileControls() {
+  const area = document.getElementById('obbyJoystickArea');
+  const knob = document.getElementById('obbyJoystickKnob');
+  const jumpBtn = document.getElementById('obbyJumpBtn');
+  if (!area) return;
+  knob.style.left = '35px';
+  knob.style.top = '35px';
+  let touchId = null;
+  const cx = 60, cy = 60;
+  area.ontouchstart = (e) => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    touchId = t.identifier; joystickActive = true;
+    updateJoystick(t, area, knob, cx, cy);
+  };
+  area.ontouchmove = (e) => {
+    e.preventDefault();
+    for (let t of e.changedTouches) { if (t.identifier===touchId) updateJoystick(t, area, knob, cx, cy); }
+  };
+  const endJoy = () => { joystickActive=false; joystickDX=0; joystickDZ=0; knob.style.left='35px'; knob.style.top='35px'; touchId=null; };
+  area.ontouchend = endJoy;
+  area.ontouchcancel = endJoy;
+  jumpBtn.ontouchstart = (e) => {
+    e.preventDefault();
+    if (!obbyJumping) { obbyVelocity.y=0.2; obbyJumping=true; }
+  };
+}
+
+function onObbyKeyDown(e) { obbyKeys[e.code] = true; }
+function onObbyKeyUp(e) { obbyKeys[e.code] = false; }
+
+function obbyLoop() {
+  if (!obbyRunning) return;
+  obbyAnimId = requestAnimationFrame(obbyLoop);
+  const t = Date.now() * 0.001;
+
+  // Timer
+  const elapsed = (Date.now() - obbyTimerStart) * 0.001;
+  if (!obbyComplete) {
+    document.getElementById('obbyTimer').textContent = '⏱ ' + elapsed.toFixed(1) + 's';
+  }
+
+  // Animate platforms
+  obbyPlatforms.forEach(plat => {
+    if (plat.type === 'moveX') {
+      plat.mesh.position.x = plat.baseX + Math.sin(t * plat.spd) * plat.amp;
+    } else if (plat.type === 'moveY') {
+      plat.mesh.position.y = plat.baseY + Math.sin(t * plat.spd) * plat.amp;
+    } else if (plat.type === 'blink') {
+      plat.blinkTimer += 0.016;
+      const phase = plat.blinkTimer % 3.0;
+      const vis = phase < 2.0;
+      if (vis !== plat.blinkState) {
+        plat.blinkState = vis;
+        plat.mesh.visible = vis;
+      }
+    }
+    if (plat.ckpt > 0) {
+      plat.mat.emissiveIntensity = 0.5 + Math.sin(t * 2.5) * 0.35;
+    }
+    if (plat.finish) {
+      plat.mat.emissiveIntensity = 0.7 + Math.sin(t * 3) * 0.3;
+      plat.mesh.rotation.y += 0.004;
+    }
+  });
+
+  // Player movement
+  const speed = 0.13;
+  let moveX = 0, moveZ = 0;
+  if (obbyKeys['KeyW']||obbyKeys['ArrowUp']) moveZ -= speed;
+  if (obbyKeys['KeyS']||obbyKeys['ArrowDown']) moveZ += speed;
+  if (obbyKeys['KeyA']||obbyKeys['ArrowLeft']) moveX -= speed;
+  if (obbyKeys['KeyD']||obbyKeys['ArrowRight']) moveX += speed;
+  if (obbyKeys['Space'] && !obbyJumping) { obbyVelocity.y = 0.2; obbyJumping = true; }
+  if (joystickActive) { moveX += joystickDX * speed; moveZ += joystickDZ * speed; }
+
+  if (Math.abs(moveX)>0.001 || Math.abs(moveZ)>0.001) {
+    obbyPlayer.rotation.y = Math.atan2(moveX, moveZ);
+  }
+
+  obbyPlayer.position.x += moveX;
+  obbyPlayer.position.z += moveZ;
+
+  // Gravity
+  obbyVelocity.y -= 0.009;
+  obbyPlayer.position.y += obbyVelocity.y;
+
+  // Platform collision
+  let platformVelX = 0;
+  const prevT = t - 0.016;
+
+  obbyPlatforms.forEach(plat => {
+    if (!plat.mesh.visible || (plat.type==='blink' && !plat.blinkState)) return;
+    const px = obbyPlayer.position.x;
+    const py = obbyPlayer.position.y;
+    const pz = obbyPlayer.position.z;
+    const platX = plat.mesh.position.x;
+    const platY = plat.mesh.position.y;
+    const platZ = plat.mesh.position.z;
+    const hw = plat.w / 2 + 0.35;
+    const hd = plat.d / 2 + 0.35;
+
+    if (Math.abs(px-platX)<hw && Math.abs(pz-platZ)<hd) {
+      const topY = platY + 0.25;
+      if (py >= topY-0.1 && py <= topY+0.7 && obbyVelocity.y <= 0) {
+        obbyPlayer.position.y = topY + 0.8;
+        obbyVelocity.y = 0;
+        obbyJumping = false;
+
+        // Carry X velocity from moving platform
+        if (plat.type === 'moveX') {
+          const prevPlatX = plat.baseX + Math.sin(prevT * plat.spd) * plat.amp;
+          platformVelX = plat.mesh.position.x - prevPlatX;
+        }
+
+        // Checkpoint
+        if (plat.ckpt > 0 && !obbyCheckpointsEarned.has(plat.ckpt)) {
+          obbyCheckpointsEarned.add(plat.ckpt);
+          obbyCheckpointReached = plat.ckpt;
+          setBiomes(getBiomes() + 10);
+          updateAllBiomes();
+          document.getElementById('obbyCheckpoints').textContent = '🏁 ' + obbyCheckpointsEarned.size + '/3';
+          toast('Checkpoint ' + plat.ckpt + ' reached! +10 💎', '#22c55e');
+          obbyFlash('#22c55e');
+        }
+
+        // Finish
+        if (plat.finish && !obbyComplete) {
+          obbyComplete = true;
+          const totalTime = elapsed.toFixed(1);
+          setBiomes(getBiomes() + 100);
+          updateAllBiomes();
+          spawnObbyParticles();
+          document.getElementById('obbyCompleteTime').textContent = totalTime + 's';
+          document.getElementById('obbyCompleteOverlay').style.display = 'flex';
+          toast('🎉 OBBY COMPLETE! +100 💎', '#fbbf24');
+        }
+      }
+    }
+  });
+
+  obbyPlayer.position.x += platformVelX;
+  obbyPlayer.position.x = Math.max(-30, Math.min(30, obbyPlayer.position.x));
+
+  // Fall into lava
+  if (obbyPlayer.position.y < -7) {
+    respawnObby();
+  }
+
+  // Camera follow
+  const camTarget = obbyPlayer.position.clone().add(new THREE.Vector3(0,5,12));
+  obbyCamera.position.lerp(camTarget, 0.06);
+  obbyCamera.lookAt(obbyPlayer.position.x, obbyPlayer.position.y+1, obbyPlayer.position.z);
+
+  // Particles
+  if (obbyParticleSystem) updateObbyParticles();
+
+  renderer.render(obbyScene, obbyCamera);
+}
+
+function respawnObby() {
+  const pos = obbyCheckpointPos[obbyCheckpointReached] || {x:0,y:3.5,z:0};
+  obbyPlayer.position.set(pos.x, pos.y, pos.z);
+  obbyVelocity = {x:0,y:0,z:0};
+  obbyJumping = false;
+  toast('Fell in lava! Respawn at CP' + obbyCheckpointReached + ' 💀', '#ef4444');
+}
+
+function obbyFlash(color) {
+  const f = document.createElement('div');
+  f.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:'+color+';opacity:0.35;z-index:99;pointer-events:none;transition:opacity 0.5s';
+  document.body.appendChild(f);
+  setTimeout(() => { f.style.opacity='0'; setTimeout(()=>f.remove(),500); }, 100);
+}
+
+function spawnObbyParticles() {
+  const count = 250;
+  const positions = new Float32Array(count*3);
+  const colors = new Float32Array(count*3);
+  const velocities = [];
+  const colOpts = [[1,0.76,0.1],[0.37,0.64,0.98],[0.95,0.28,0.71],[0.4,0.85,0.6],[0.78,0.38,0.99],[1,0.57,0.24]];
+  const pp = obbyPlayer.position;
+  for (let i=0;i<count;i++) {
+    positions[i*3]=pp.x+(Math.random()-0.5)*2;
+    positions[i*3+1]=pp.y+Math.random()*2;
+    positions[i*3+2]=pp.z+(Math.random()-0.5)*2;
+    velocities.push({x:(Math.random()-0.5)*0.22,y:0.05+Math.random()*0.18,z:(Math.random()-0.5)*0.22});
+    const c=colOpts[Math.floor(Math.random()*colOpts.length)];
+    colors[i*3]=c[0]; colors[i*3+1]=c[1]; colors[i*3+2]=c[2];
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
+  const mat = new THREE.PointsMaterial({size:0.45,vertexColors:true,transparent:true,opacity:1});
+  const pts = new THREE.Points(geo,mat);
+  obbyScene.add(pts);
+  obbyParticleSystem = {points:pts, velocities, mat, life:1.0};
+}
+
+function updateObbyParticles() {
+  const ps = obbyParticleSystem;
+  ps.life -= 0.007;
+  ps.mat.opacity = Math.max(0, ps.life);
+  const pos = ps.points.geometry.attributes.position.array;
+  for (let i=0;i<ps.velocities.length;i++) {
+    const v = ps.velocities[i];
+    pos[i*3]+=v.x; pos[i*3+1]+=v.y; pos[i*3+2]+=v.z;
+    v.y -= 0.003;
+  }
+  ps.points.geometry.attributes.position.needsUpdate = true;
+  if (ps.life <= 0) {
+    obbyScene.remove(ps.points);
+    obbyParticleSystem = null;
+  }
+}
+
+function stopObby() {
+  obbyRunning = false;
+  obbyComplete = false;
+  if (obbyAnimId) cancelAnimationFrame(obbyAnimId);
+  document.removeEventListener('keydown', onObbyKeyDown);
+  document.removeEventListener('keyup', onObbyKeyUp);
+  obbyKeys = {};
+  obbyPlatforms = [];
+  obbyParticleSystem = null;
+  joystickActive = false; joystickDX = 0; joystickDZ = 0;
+  const overlay = document.getElementById('obbyCompleteOverlay');
+  if (overlay) overlay.style.display = 'none';
+  document.getElementById('obbyHud').style.display = 'none';
+}
+
+function exitObby() {
+  stopObby();
+  showScreen('lobby');
+}
+
+function restartObby() {
+  stopObby();
+  // Need to re-add obbyScreen as active since stopObby + showScreen('lobby') was not called
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('obbyScreen');
+  if (el) el.classList.add('active');
+  currentScreen = 'obby';
+  startObby();
+}
+
+// ============================================
 // RESIZE HANDLER
 // ============================================
 window.addEventListener('resize', () => {
@@ -1487,6 +1992,7 @@ window.addEventListener('resize', () => {
   if (renderer) { renderer.setSize(w,h); }
   if (bgCamera) { bgCamera.aspect = w/h; bgCamera.updateProjectionMatrix(); }
   if (gameCamera) { gameCamera.aspect = w/h; gameCamera.updateProjectionMatrix(); }
+  if (obbyCamera) { obbyCamera.aspect = w/h; obbyCamera.updateProjectionMatrix(); }
 });
 
 // ============================================

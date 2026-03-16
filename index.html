@@ -1887,10 +1887,17 @@ function obbyLoop() {
     respawnObby();
   }
 
-  // Camera follow
-  const camTarget = obbyPlayer.position.clone().add(new THREE.Vector3(0,5,12));
-  obbyCamera.position.lerp(camTarget, 0.06);
-  obbyCamera.lookAt(obbyPlayer.position.x, obbyPlayer.position.y+1, obbyPlayer.position.z);
+  // Camera follow - forward-facing chase cam (obby runs in +Z direction)
+  // Camera sits BEHIND and ABOVE the player, looking FORWARD at upcoming platforms
+  const camTarget = obbyPlayer.position.clone().add(new THREE.Vector3(0, 4, -10));
+  obbyCamera.position.lerp(camTarget, 0.08);
+  // Look slightly ahead of the player so platforms ahead are visible
+  const lookAhead = new THREE.Vector3(
+    obbyPlayer.position.x,
+    obbyPlayer.position.y + 1,
+    obbyPlayer.position.z + 8
+  );
+  obbyCamera.lookAt(lookAhead);
 
   // Particles
   if (obbyParticleSystem) updateObbyParticles();

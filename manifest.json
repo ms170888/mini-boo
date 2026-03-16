@@ -1,0 +1,22 @@
+{
+  "name": "Mini Boo",
+  "short_name": "Mini Boo",
+  "description": "A 3D Roblox-style game",
+  "start_url": "/mini-boo/",
+  "display": "standalone",
+  "background_color": "#1a0a2e",
+  "theme_color": "#8b5cf6",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mini Boo 👻</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { overflow:hidden; font-family:'Fredoka One',cursive; background:#1a0a2e; color:#fff; }
+canvas { position:fixed; top:0; left:0; z-index:0; }
+
+/* Shared overlay styles */
+.screen { position:fixed; top:0; left:0; width:100%; height:100%; z-index:10; display:none; flex-direction:column; align-items:center; justify-content:center; }
+.screen.active { display:flex; }
+
+/* Buttons */
+.btn {
+  font-family:'Fredoka One',cursive; border:none; padding:14px 32px; border-radius:16px; font-size:18px;
+  cursor:pointer; color:#fff; text-shadow:0 2px 4px rgba(0,0,0,.4); transition:transform .15s,box-shadow .15s;
+  box-shadow:0 4px 15px rgba(0,0,0,.3);
+}
+.btn:hover { transform:scale(1.07); box-shadow:0 6px 25px rgba(0,0,0,.4); }
+.btn:active { transform:scale(.96); }
+.btn-purple { background:linear-gradient(135deg,#8b5cf6,#6d28d9); }
+.btn-green { background:linear-gradient(135deg,#34d399,#059669); }
+.btn-pink { background:linear-gradient(135deg,#f472b6,#db2777); }
+.btn-blue { background:linear-gradient(135deg,#60a5fa,#2563eb); }
+.btn-orange { background:linear-gradient(135deg,#fb923c,#ea580c); }
+.btn-red { background:linear-gradient(135deg,#f87171,#dc2626); }
+.btn-sm { padding:10px 20px; font-size:14px; border-radius:12px; }
+.btn-back { position:absolute; top:20px; left:20px; z-index:20; }
+
+/* Input fields */
+.input {
+  font-family:'Fredoka One',cursive; padding:14px 20px; border-radius:14px; border:3px solid #8b5cf6;
+  background:rgba(30,10,60,.85); color:#fff; font-size:16px; width:280px; outline:none;
+  text-align:center;
+}
+.input::placeholder { color:rgba(255,255,255,.4); }
+.input:focus { border-color:#a78bfa; box-shadow:0 0 20px rgba(139,92,246,.4); }
+
+/* Panel box */
+.panel {
+  background:rgba(20,5,50,.92); border:3px solid #7c3aed; border-radius:24px;
+  padding:30px; backdrop-filter:blur(10px); box-shadow:0 0 40px rgba(124,58,237,.3);
+  max-width:95vw;
+}
+
+/* Toast */
+#toast {
+  position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:999;
+  padding:14px 28px; border-radius:14px; font-family:'Fredoka One',cursive; font-size:16px;
+  display:none; animation:toastIn .3s ease;
+}
+@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+/* HUD */
+#hud {
+  position:fixed; top:0; left:0; width:100%; z-index:15; display:none;
+  padding:12px 20px; background:linear-gradient(180deg,rgba(20,5,50,.9),transparent);
+}
+.hud-row { display:flex; justify-content:space-between; align-items:center; }
+.hud-item { font-size:18px; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+.biomes-display { color:#fbbf24; }
+
+/* Login screen */
+#loginScreen .panel { text-align:center; }
+#loginScreen .logo { max-width:220px; margin-bottom:10px; border-radius:18px; }
+#loginScreen h1 { font-size:42px; background:linear-gradient(135deg,#c084fc,#60a5fa,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:4px; }
+#loginScreen .subtitle { color:#a78bfa; margin-bottom:20px; font-size:14px; }
+#loginScreen .input { margin-bottom:12px; display:block; }
+#loginScreen .btn { margin:6px; }
+#loginScreen .error { color:#f87171; font-size:13px; min-height:20px; margin-bottom:8px; }
+
+/* Lobby screen */
+#lobbyScreen { pointer-events:none; }
+#lobbyScreen > * { pointer-events:auto; }
+.portal-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:20px; max-width:420px; margin-top:60px; }
+.portal-btn {
+  padding:24px 16px; border-radius:20px; border:3px solid rgba(255,255,255,.2);
+  font-family:'Fredoka One',cursive; font-size:17px; cursor:pointer; color:#fff;
+  text-shadow:0 2px 6px rgba(0,0,0,.5); transition:transform .15s; text-align:center;
+  box-shadow:0 4px 20px rgba(0,0,0,.3);
+}
+.portal-btn:hover { transform:scale(1.06); }
+.portal-btn .emoji { font-size:36px; display:block; margin-bottom:6px; }
+.portal-play { background:linear-gradient(135deg,#34d399,#059669); border-color:#6ee7b7; }
+.portal-avatar { background:linear-gradient(135deg,#f472b6,#db2777); border-color:#f9a8d4; }
+.portal-shop { background:linear-gradient(135deg,#fbbf24,#d97706); border-color:#fde68a; }
+.portal-editor { background:linear-gradient(135deg,#60a5fa,#2563eb); border-color:#93c5fd; }
+
+/* Chat box */
+#chatBox {
+  position:fixed; bottom:10px; left:50%; transform:translateX(-50%); z-index:16;
+  width:90%; max-width:500px; background:rgba(20,5,50,.85); border:2px solid #7c3aed;
+  border-radius:16px; padding:10px 16px; display:none; max-height:120px; overflow-y:auto;
+}
+.chat-msg { font-size:13px; margin:3px 0; }
+.chat-npc { color:#a78bfa; }
+.chat-name { color:#fbbf24; }
+
+/* Avatar Editor */
+#avatarScreen .panel { max-height:90vh; overflow-y:auto; text-align:center; }
+#avatarPreviewContainer { width:220px; height:260px; margin:0 auto 10px; border-radius:16px; border:2px solid #7c3aed; overflow:hidden; background:rgba(0,0,0,.3); }
+.editor-section { margin:10px 0; }
+.editor-section h3 { font-size:15px; color:#c084fc; margin-bottom:6px; }
+.color-grid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+.color-swatch {
+  width:38px; height:38px; border-radius:50%; border:3px solid transparent; cursor:pointer;
+  transition:transform .15s,border-color .15s;
+}
+.color-swatch:hover,.color-swatch.selected { transform:scale(1.15); border-color:#fff; }
+.option-grid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+.option-btn {
+  padding:8px 16px; border-radius:12px; border:2px solid #7c3aed; background:rgba(124,58,237,.2);
+  color:#fff; font-family:'Fredoka One',cursive; font-size:13px; cursor:pointer; transition:all .15s;
+}
+.option-btn:hover,.option-btn.selected { background:#7c3aed; border-color:#a78bfa; }
+.option-btn .price { font-size:11px; color:#fbbf24; display:block; }
+
+/* Shop */
+#shopScreen .panel { max-height:90vh; overflow-y:auto; text-align:center; max-width:600px; width:95vw; }
+.shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; margin:12px 0; }
+.shop-item {
+  background:rgba(124,58,237,.15); border:2px solid #7c3aed; border-radius:16px; padding:14px 8px;
+  text-align:center; cursor:pointer; transition:transform .15s;
+}
+.shop-item:hover { transform:scale(1.05); }
+.shop-item .icon { font-size:32px; }
+.shop-item .name { font-size:13px; margin:4px 0; }
+.shop-item .price { color:#fbbf24; font-size:13px; }
+.shop-item.owned { border-color:#34d399; }
+.shop-item.owned .price { color:#34d399; }
+.shop-section { font-size:18px; color:#c084fc; margin:16px 0 8px; text-align:left; }
+
+/* Game screen */
+#gameScreen { pointer-events:none; }
+#gameScreen > * { pointer-events:auto; }
+#gameHud {
+  position:fixed; top:15px; right:20px; z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #7c3aed; border-radius:14px; padding:10px 18px;
+  font-size:16px;
+}
+#gameHud .biomes-display { font-size:20px; }
+
+/* Mobile controls */
+#mobileControls { display:none; position:fixed; bottom:0; left:0; width:100%; height:200px; z-index:16; pointer-events:none; }
+#joystickArea {
+  position:absolute; bottom:30px; left:30px; width:120px; height:120px;
+  border-radius:50%; background:rgba(124,58,237,.3); border:3px solid rgba(124,58,237,.5);
+  pointer-events:auto; touch-action:none;
+}
+#joystickKnob {
+  position:absolute; width:50px; height:50px; border-radius:50%;
+  background:rgba(167,139,250,.7); top:35px; left:35px; pointer-events:none;
+}
+#jumpBtn {
+  position:absolute; bottom:40px; right:30px; width:80px; height:80px; border-radius:50%;
+  background:rgba(52,211,153,.4); border:3px solid rgba(52,211,153,.6);
+  font-family:'Fredoka One',cursive; font-size:14px; color:#fff; pointer-events:auto;
+  display:flex; align-items:center; justify-content:center; touch-action:none;
+}
+
+/* Level editor */
+#editorScreen .panel { max-height:90vh; overflow-y:auto; text-align:center; max-width:700px; width:95vw; }
+#editorCanvas { width:100%; max-width:600px; height:400px; border-radius:12px; border:2px solid #7c3aed; margin:10px auto; cursor:crosshair; }
+.toolbar { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
+.tool-btn {
+  padding:10px 16px; border-radius:12px; border:2px solid #7c3aed; background:rgba(124,58,237,.2);
+  color:#fff; font-family:'Fredoka One',cursive; font-size:13px; cursor:pointer; transition:all .15s;
+}
+.tool-btn:hover,.tool-btn.selected { background:#7c3aed; }
+#levelCodeArea { width:100%; max-width:500px; height:60px; background:rgba(0,0,0,.3); border:2px solid #7c3aed; border-radius:10px; color:#fff; font-family:monospace; font-size:12px; padding:8px; resize:none; margin:8px auto; display:block; }
+
+@media (pointer:coarse) { #mobileControls { display:block; } }
+@media (max-width:500px) {
+  .portal-grid { grid-template-columns:1fr 1fr; gap:10px; padding:12px; max-width:100%; }
+  .portal-btn { padding:16px 10px; font-size:14px; }
+  .portal-btn .emoji { font-size:28px; }
+  .btn { padding:12px 24px; font-size:15px; }
+  #loginScreen h1 { font-size:30px; }
+  .shop-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); }
+}
+</style>
+</head>
+<body>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- HUD (lobby) -->
+<div id="hud">
+  <div class="hud-row">
+    <span class="hud-item" id="hudUser">👻 Guest</span>
+    <span class="hud-item biomes-display" id="hudBiomes">💎 100</span>
+  </div>
+</div>
+
+<!-- SCREEN 1: Login -->
+<div id="loginScreen" class="screen active">
+  <div class="panel">
+    <img src="logo.jpg" class="logo" alt="Mini Boo" onerror="this.style.display='none'">
+    <h1>Mini Boo</h1>
+    <p class="subtitle">A Spooky Fun Adventure! 👻</p>
+    <div class="error" id="loginError">&nbsp;</div>
+    <input class="input" id="usernameInput" placeholder="👤 Username" maxlength="16">
+    <input class="input" id="passwordInput" placeholder="🔒 Password" type="password" maxlength="32">
+    <div style="margin-top:8px">
+      <button class="btn btn-purple" onclick="doLogin()">Login</button>
+      <button class="btn btn-green" onclick="doSignup()">Sign Up</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: Lobby -->
+<div id="lobbyScreen" class="screen">
+  <div class="portal-grid">
+    <div class="portal-btn portal-play" onclick="showScreen('game')"><span class="emoji">🎮</span>Play Game</div>
+    <div class="portal-btn portal-avatar" onclick="showScreen('avatar')"><span class="emoji">👻</span>Avatar Editor</div>
+    <div class="portal-btn portal-shop" onclick="showScreen('shop')"><span class="emoji">🛒</span>Item Shop</div>
+    <div class="portal-btn portal-editor" onclick="showScreen('editor')"><span class="emoji">🔧</span>Level Editor</div>
+  </div>
+  <div id="chatBox">
+    <div class="chat-msg"><span class="chat-npc">🤖 Boo Bot:</span> Welcome to Mini Boo! Pick a door!</div>
+  </div>
+</div>
+
+<!-- SCREEN 3: Avatar Editor -->
+<div id="avatarScreen" class="screen">
+  <button class="btn btn-purple btn-sm btn-back" onclick="showScreen('lobby')">← Back</button>
+  <div class="panel">
+    <h2 style="color:#c084fc;margin-bottom:8px">👻 Avatar Editor</h2>
+    <div id="avatarPreviewContainer"></div>
+    <div class="editor-section">
+      <h3>🎨 Skin Color</h3>
+      <div class="color-grid" id="colorPicker"></div>
+    </div>
+    <div class="editor-section">
+      <h3>👀 Eye Style</h3>
+      <div class="option-grid" id="eyePicker"></div>
+    </div>
+    <div class="editor-section">
+      <h3>👑 Hat</h3>
+      <div class="option-grid" id="hatPicker"></div>
+    </div>
+    <div class="editor-section">
+      <h3>✨ Accessory</h3>
+      <div class="option-grid" id="accPicker"></div>
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn btn-green btn-sm" onclick="saveAvatar()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4: Shop -->
+<div id="shopScreen" class="screen">
+  <button class="btn btn-purple btn-sm btn-back" onclick="showScreen('lobby')">← Back</button>
+  <div class="panel">
+    <h2 style="color:#fbbf24;margin-bottom:4px">🛒 Item Shop</h2>
+    <p style="font-size:14px;color:#a78bfa;margin-bottom:10px">Your Biomes: <span id="shopBiomes" class="biomes-display">💎 100</span></p>
+    <div id="shopContent"></div>
+  </div>
+</div>
+
+<!-- SCREEN 5: Game -->
+<div id="gameScreen" class="screen">
+  <button class="btn btn-purple btn-sm btn-back" onclick="exitGame()">← Lobby</button>
+  <div id="gameHud">
+    <div>👻 <span id="gameUser">Player</span></div>
+    <div class="biomes-display">💎 <span id="gameBiomes">100</span></div>
+    <div>⭐ <span id="gameScore">0</span></div>
+  </div>
+  <div id="mobileControls">
+    <div id="joystickArea"><div id="joystickKnob"></div></div>
+    <div id="jumpBtn">JUMP</div>
+  </div>
+</div>
+
+<!-- SCREEN 6: Level Editor -->
+<div id="editorScreen" class="screen">
+  <button class="btn btn-purple btn-sm btn-back" onclick="showScreen('lobby')">← Back</button>
+  <div class="panel">
+    <h2 style="color:#60a5fa;margin-bottom:8px">🔧 Level Editor</h2>
+    <div class="toolbar" id="editorToolbar"></div>
+    <canvas id="editorCanvas"></canvas>
+    <div class="toolbar">
+      <button class="btn btn-green btn-sm" onclick="saveLevelCode()">💾 Save Code</button>
+      <button class="btn btn-blue btn-sm" onclick="loadLevelCode()">📂 Load Code</button>
+      <button class="btn btn-orange btn-sm" onclick="playCustomLevel()">▶ Play Level</button>
+      <button class="btn btn-red btn-sm" onclick="clearEditor()">🗑 Clear</button>
+    </div>
+    <textarea id="levelCodeArea" placeholder="Level code appears here... paste a code and click Load!"></textarea>
+  </div>
+</div>
+
+<script>
+// ============================================
+// GLOBAL STATE
+// ============================================
+let currentUser = null;
+let currentScreen = 'login';
+let renderer, bgScene, bgCamera, bgGhosts = [];
+let lobbyScene, lobbyCamera, lobbyRenderer;
+let avatarScene, avatarCamera, avatarRenderer, avatarPreviewGhost;
+let gameScene, gameCamera, gameRenderer, gamePlayer, gameRunning = false;
+let gameKeys = {}, gameVelocity = {x:0,y:0,z:0}, gameOrbs = [], gameObstacles = [];
+let gameScore = 0, gameJumping = false;
+let joystickActive = false, joystickDX = 0, joystickDZ = 0;
+let editorGrid = [];
+const EDITOR_COLS = 20, EDITOR_ROWS = 15;
+let editorTool = 'ground';
+let customLevelData = null;
+
+const COLORS = [
+  {name:'White',hex:'#f0f0f0'},{name:'Blue',hex:'#60a5fa'},{name:'Pink',hex:'#f9a8d4'},
+  {name:'Green',hex:'#6ee7b7'},{name:'Yellow',hex:'#fde68a'},{name:'Purple',hex:'#c084fc'},
+  {name:'Red',hex:'#fca5a5'},{name:'Orange',hex:'#fdba74'}
+];
+const EYES = [{name:'Normal',id:'normal'},{name:'Happy',id:'happy'},{name:'Cool',id:'cool'}];
+const HATS = [{name:'None',id:'none',price:0},{name:'Crown',id:'crown',price:0},{name:'Wizard',id:'wizard',price:30},{name:'Cap',id:'cap',price:20}];
+const ACCS = [{name:'None',id:'none',price:0},{name:'Glasses',id:'glasses',price:0},{name:'Cape',id:'cape',price:25},{name:'Wings',id:'wings',price:40}];
+
+const SHOP_ITEMS = [
+  {cat:'Hats',items:[
+    {name:'Crown',id:'hat_crown',icon:'👑',price:0,type:'hat',val:'crown'},
+    {name:'Wizard Hat',id:'hat_wizard',icon:'🧙',price:30,type:'hat',val:'wizard'},
+    {name:'Cool Cap',id:'hat_cap',icon:'🧢',price:20,type:'hat',val:'cap'},
+  ]},
+  {cat:'Accessories',items:[
+    {name:'Glasses',id:'acc_glasses',icon:'👓',price:0,type:'acc',val:'glasses'},
+    {name:'Cape',id:'acc_cape',icon:'🦸',price:25,type:'acc',val:'cape'},
+    {name:'Wings',id:'acc_wings',icon:'🪽',price:40,type:'acc',val:'wings'},
+  ]},
+  {cat:'Colors',items:[
+    {name:'Blue Glow',id:'col_blue',icon:'🔵',price:15,type:'color',val:'#60a5fa'},
+    {name:'Pink Glow',id:'col_pink',icon:'🩷',price:15,type:'color',val:'#f9a8d4'},
+    {name:'Gold Glow',id:'col_gold',icon:'🟡',price:25,type:'color',val:'#fbbf24'},
+    {name:'Lava Red',id:'col_red',icon:'🔴',price:20,type:'color',val:'#fca5a5'},
+  ]}
+];
+
+const NPC_MESSAGES = [
+  "Boo Bot: Collect those shiny orbs! 💎","Boo Bot: Watch out for red blocks! 🟥",
+  "Ghost Friend: Your avatar looks awesome! 👻","Boo Bot: Try the Level Editor! 🔧",
+  "Ghost Friend: I found 50 Biomes today!","Boo Bot: Spooky vibes! 🎃",
+  "Ghost Friend: Jump over the obstacles!","Boo Bot: Have fun exploring! 🌟",
+  "Ghost Friend: Nice hat! 👑","Boo Bot: You're doing great! ⭐"
+];
+
+// ============================================
+// UTILITY
+// ============================================
+function toast(msg, color='#7c3aed') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.background = color; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+
+function getAccounts() { return JSON.parse(localStorage.getItem('miniboo_accounts') || '{}'); }
+function saveAccounts(a) { localStorage.setItem('miniboo_accounts', JSON.stringify(a)); }
+function getUserData() {
+  if (!currentUser) return null;
+  const a = getAccounts();
+  return a[currentUser] || null;
+}
+function saveUserData(data) {
+  if (!currentUser) return;
+  const a = getAccounts();
+  a[currentUser] = data;
+  saveAccounts(a);
+}
+
+function getAvatar() {
+  const d = getUserData();
+  return d ? (d.avatar || {color:'#f0f0f0',eyes:'normal',hat:'none',acc:'none'}) : {color:'#f0f0f0',eyes:'normal',hat:'none',acc:'none'};
+}
+function getBiomes() { const d = getUserData(); return d ? (d.biomes ?? 100) : 100; }
+function setBiomes(v) { const d = getUserData(); if(d){d.biomes=v; saveUserData(d);} updateAllBiomes(); }
+function getOwned() { const d = getUserData(); return d ? (d.owned || []) : []; }
+function addOwned(id) { const d = getUserData(); if(d){if(!d.owned)d.owned=[]; if(!d.owned.includes(id))d.owned.push(id); saveUserData(d);} }
+
+function updateAllBiomes() {
+  const b = getBiomes();
+  document.getElementById('hudBiomes').textContent = '💎 ' + b;
+  document.getElementById('shopBiomes').textContent = '💎 ' + b;
+  document.getElementById('gameBiomes').textContent = b;
+}
+
+// ============================================
+// AUTH
+// ============================================
+function doSignup() {
+  const u = document.getElementById('usernameInput').value.trim();
+  const p = document.getElementById('passwordInput').value;
+  const err = document.getElementById('loginError');
+  if (u.length < 2) { err.textContent = 'Username too short!'; return; }
+  if (p.length < 3) { err.textContent = 'Password too short!'; return; }
+  const accs = getAccounts();
+  if (accs[u]) { err.textContent = 'Username taken!'; return; }
+  accs[u] = {password:p, biomes:100, avatar:{color:'#f0f0f0',eyes:'normal',hat:'none',acc:'none'}, owned:['hat_crown','acc_glasses']};
+  saveAccounts(accs);
+  currentUser = u;
+  toast('Welcome, ' + u + '! 👻', '#059669');
+  showScreen('lobby');
+}
+
+function doLogin() {
+  const u = document.getElementById('usernameInput').value.trim();
+  const p = document.getElementById('passwordInput').value;
+  const err = document.getElementById('loginError');
+  const accs = getAccounts();
+  if (!accs[u]) { err.textContent = 'Account not found!'; return; }
+  if (accs[u].password !== p) { err.textContent = 'Wrong password!'; return; }
+  currentUser = u;
+  toast('Welcome back, ' + u + '! 👻', '#059669');
+  showScreen('lobby');
+}
+
+// ============================================
+// SCREEN MANAGEMENT
+// ============================================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(name + 'Screen');
+  if (el) el.classList.add('active');
+  currentScreen = name;
+
+  document.getElementById('hud').style.display = (name==='lobby') ? 'block' : 'none';
+  document.getElementById('chatBox').style.display = (name==='lobby') ? 'block' : 'none';
+
+  if (name === 'lobby') {
+    document.getElementById('hudUser').textContent = '👻 ' + (currentUser||'Guest');
+    updateAllBiomes();
+    startNPCChat();
+  }
+  if (name === 'avatar') initAvatarEditor();
+  if (name === 'shop') initShop();
+  if (name === 'game') startGame();
+  if (name === 'editor') initEditor();
+
+  if (name !== 'game' && gameRunning) stopGame();
+}
+
+// ============================================
+// BACKGROUND 3D (Login screen floating ghosts)
+// ============================================
+function initBackground() {
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.domElement.style.position = 'fixed';
+  renderer.domElement.style.top = '0';
+  renderer.domElement.style.left = '0';
+  renderer.domElement.style.zIndex = '0';
+  document.body.prepend(renderer.domElement);
+
+  bgScene = new THREE.Scene();
+  bgScene.background = new THREE.Color(0x0f0525);
+  bgScene.fog = new THREE.Fog(0x0f0525, 8, 30);
+
+  bgCamera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
+  bgCamera.position.set(0, 2, 10);
+
+  const ambLight = new THREE.AmbientLight(0x6d28d9, 0.5);
+  bgScene.add(ambLight);
+  const dirLight = new THREE.DirectionalLight(0xc084fc, 0.8);
+  dirLight.position.set(5, 10, 5);
+  bgScene.add(dirLight);
+  const pointLight = new THREE.PointLight(0x8b5cf6, 1, 20);
+  pointLight.position.set(0, 3, 0);
+  bgScene.add(pointLight);
+
+  // Floating bg ghosts
+  for (let i = 0; i < 8; i++) {
+    const g = createGhostMesh({color:COLORS[i%COLORS.length].hex, eyes:'normal', hat:'none', acc:'none'});
+    g.position.set((Math.random()-0.5)*16, (Math.random()-0.5)*8, (Math.random()-0.5)*10 - 5);
+    g.userData.speed = 0.3 + Math.random()*0.5;
+    g.userData.phase = Math.random()*Math.PI*2;
+    bgScene.add(g);
+    bgGhosts.push(g);
+  }
+
+  // Stars
+  const starGeo = new THREE.BufferGeometry();
+  const starVerts = [];
+  for (let i=0;i<500;i++) { starVerts.push((Math.random()-0.5)*60,(Math.random()-0.5)*40,(Math.random()-0.5)*40-10); }
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts,3));
+  const starMat = new THREE.PointsMaterial({color:0xffffff,size:0.08});
+  bgScene.add(new THREE.Points(starGeo,starMat));
+
+  animateBackground();
+}
+
+function animateBackground() {
+  requestAnimationFrame(animateBackground);
+  const t = Date.now()*0.001;
+  bgGhosts.forEach(g => {
+    g.position.y += Math.sin(t*g.userData.speed + g.userData.phase)*0.003;
+    g.rotation.y += 0.005;
+    g.position.x += Math.sin(t*0.2 + g.userData.phase)*0.003;
+  });
+  if (currentScreen === 'login' || currentScreen === 'lobby') {
+    renderer.render(bgScene, bgCamera);
+  }
+}
+
+// ============================================
+// GHOST MESH BUILDER
+// ============================================
+function createGhostMesh(avatar) {
+  const group = new THREE.Group();
+  const col = new THREE.Color(avatar.color);
+
+  // Body (elongated sphere)
+  const bodyGeo = new THREE.SphereGeometry(0.6, 24, 18);
+  bodyGeo.scale(1, 1.3, 0.9);
+  const bodyMat = new THREE.MeshPhongMaterial({color:col, emissive:col, emissiveIntensity:0.15, transparent:true, opacity:0.92});
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.3;
+  group.add(body);
+
+  // Ghost tail (inverted cone)
+  const tailGeo = new THREE.ConeGeometry(0.5, 0.6, 12);
+  const tailMat = new THREE.MeshPhongMaterial({color:col, emissive:col, emissiveIntensity:0.1, transparent:true, opacity:0.85});
+  const tail = new THREE.Mesh(tailGeo, tailMat);
+  tail.rotation.x = Math.PI;
+  tail.position.y = -0.55;
+  group.add(tail);
+
+  // Eyes
+  const eyeColor = avatar.eyes === 'cool' ? 0x00bfff : 0x111111;
+  const eyeMat = new THREE.MeshPhongMaterial({color:eyeColor, emissive:eyeColor, emissiveIntensity:0.3});
+
+  if (avatar.eyes === 'happy') {
+    // Happy eyes: small arcs (approximated with flattened spheres)
+    [-0.18, 0.18].forEach(x => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), eyeMat);
+      eye.scale.set(1, 0.5, 0.6);
+      eye.position.set(x, 0.55, 0.48);
+      group.add(eye);
+    });
+  } else {
+    // Normal/Cool eyes
+    const eSize = avatar.eyes === 'cool' ? 0.11 : 0.09;
+    [-0.18, 0.18].forEach(x => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(eSize, 12, 8), eyeMat);
+      eye.position.set(x, 0.45, 0.5);
+      group.add(eye);
+      // Pupil/white for normal
+      if (avatar.eyes === 'normal') {
+        const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.04,8,6), new THREE.MeshBasicMaterial({color:0xffffff}));
+        pupil.position.set(x+0.02, 0.47, 0.56);
+        group.add(pupil);
+      }
+      // Cool eyes get a shine
+      if (avatar.eyes === 'cool') {
+        const shine = new THREE.Mesh(new THREE.SphereGeometry(0.04,8,6), new THREE.MeshBasicMaterial({color:0xffffff}));
+        shine.position.set(x+0.03, 0.48, 0.58);
+        group.add(shine);
+      }
+    });
+  }
+
+  // Hat
+  if (avatar.hat === 'crown') {
+    const crownGeo = new THREE.CylinderGeometry(0.25, 0.35, 0.25, 5);
+    const crownMat = new THREE.MeshPhongMaterial({color:0xfbbf24, emissive:0xfbbf24, emissiveIntensity:0.3});
+    const crown = new THREE.Mesh(crownGeo, crownMat);
+    crown.position.y = 1.15;
+    group.add(crown);
+    // Gems
+    [0,1.26,2.51,3.77,5.03].forEach(a => {
+      const gem = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6), new THREE.MeshPhongMaterial({color:0xef4444,emissive:0xef4444,emissiveIntensity:0.4}));
+      gem.position.set(Math.sin(a)*0.3, 1.2, Math.cos(a)*0.3);
+      group.add(gem);
+    });
+  } else if (avatar.hat === 'wizard') {
+    const wizGeo = new THREE.ConeGeometry(0.35, 0.8, 12);
+    const wizMat = new THREE.MeshPhongMaterial({color:0x6d28d9, emissive:0x4c1d95, emissiveIntensity:0.2});
+    const wiz = new THREE.Mesh(wizGeo, wizMat);
+    wiz.position.y = 1.35;
+    group.add(wiz);
+    // Stars on hat
+    const starMat2 = new THREE.MeshBasicMaterial({color:0xfbbf24});
+    [0.2,0.5].forEach(h => {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.04,6,4), starMat2);
+      s.position.set(Math.sin(h*4)*0.2, 0.95+h*0.5, Math.cos(h*4)*0.2);
+      group.add(s);
+    });
+  } else if (avatar.hat === 'cap') {
+    const capGeo = new THREE.SphereGeometry(0.35, 16, 8, 0, Math.PI*2, 0, Math.PI/2);
+    const capMat = new THREE.MeshPhongMaterial({color:0xef4444, emissive:0xdc2626, emissiveIntensity:0.1});
+    const cap = new THREE.Mesh(capGeo, capMat);
+    cap.position.y = 0.95;
+    group.add(cap);
+    // Brim
+    const brimGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.04, 16, 1, false, 0, Math.PI);
+    const brim = new THREE.Mesh(brimGeo, capMat);
+    brim.position.set(0, 0.88, 0.15);
+    brim.rotation.y = Math.PI;
+    group.add(brim);
+  }
+
+  // Accessories
+  if (avatar.acc === 'glasses') {
+    const glassMat = new THREE.MeshPhongMaterial({color:0x333333});
+    [-0.18,0.18].forEach(x => {
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.02, 8, 12), glassMat);
+      rim.position.set(x, 0.45, 0.55);
+      group.add(rim);
+    });
+    const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.12,6), glassMat);
+    bridge.rotation.z = Math.PI/2;
+    bridge.position.set(0, 0.45, 0.56);
+    group.add(bridge);
+  } else if (avatar.acc === 'cape') {
+    const capeGeo = new THREE.PlaneGeometry(0.8, 1.2);
+    const capeMat = new THREE.MeshPhongMaterial({color:0x7c3aed, emissive:0x4c1d95, emissiveIntensity:0.2, side:THREE.DoubleSide});
+    const cape = new THREE.Mesh(capeGeo, capeMat);
+    cape.position.set(0, 0.1, -0.5);
+    cape.rotation.x = 0.15;
+    group.add(cape);
+  } else if (avatar.acc === 'wings') {
+    const wingMat = new THREE.MeshPhongMaterial({color:0xa78bfa, emissive:0x8b5cf6, emissiveIntensity:0.3, transparent:true, opacity:0.7, side:THREE.DoubleSide});
+    [-1,1].forEach(side => {
+      const wingShape = new THREE.Shape();
+      wingShape.moveTo(0,0);
+      wingShape.quadraticCurveTo(side*0.6, 0.4, side*0.5, 0.8);
+      wingShape.quadraticCurveTo(side*0.2, 0.5, 0, 0);
+      const wingGeo = new THREE.ShapeGeometry(wingShape);
+      const wing = new THREE.Mesh(wingGeo, wingMat);
+      wing.position.set(0, 0.2, -0.45);
+      wing.rotation.x = -0.2;
+      group.add(wing);
+    });
+  }
+
+  return group;
+}
+
+// ============================================
+// NPC CHAT
+// ============================================
+let chatInterval;
+function startNPCChat() {
+  if (chatInterval) clearInterval(chatInterval);
+  chatInterval = setInterval(() => {
+    if (currentScreen !== 'lobby') return;
+    const box = document.getElementById('chatBox');
+    const msg = NPC_MESSAGES[Math.floor(Math.random()*NPC_MESSAGES.length)];
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    const parts = msg.split(':');
+    div.innerHTML = '<span class="chat-name">' + parts[0] + ':</span><span class="chat-npc">' + parts.slice(1).join(':') + '</span>';
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    if (box.children.length > 20) box.removeChild(box.children[0]);
+  }, 5000);
+}
+
+// ============================================
+// AVATAR EDITOR
+// ============================================
+let avatarEditorAnimId;
+function initAvatarEditor() {
+  const container = document.getElementById('avatarPreviewContainer');
+  container.innerHTML = '';
+
+  avatarRenderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  avatarRenderer.setSize(220, 260);
+  avatarRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(avatarRenderer.domElement);
+
+  avatarScene = new THREE.Scene();
+  avatarScene.background = new THREE.Color(0x1a0a2e);
+  avatarCamera = new THREE.PerspectiveCamera(50, 220/260, 0.1, 50);
+  avatarCamera.position.set(0, 0.5, 3);
+
+  avatarScene.add(new THREE.AmbientLight(0x8b5cf6, 0.6));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+  dl.position.set(2, 3, 3);
+  avatarScene.add(dl);
+
+  const av = getAvatar();
+  refreshAvatarPreview(av);
+  buildColorPicker(av);
+  buildEyePicker(av);
+  buildHatPicker(av);
+  buildAccPicker(av);
+
+  if (avatarEditorAnimId) cancelAnimationFrame(avatarEditorAnimId);
+  function animAvatar() {
+    avatarEditorAnimId = requestAnimationFrame(animAvatar);
+    if (avatarPreviewGhost) avatarPreviewGhost.rotation.y += 0.01;
+    if (avatarRenderer && avatarScene && avatarCamera) avatarRenderer.render(avatarScene, avatarCamera);
+  }
+  animAvatar();
+}
+
+function refreshAvatarPreview(av) {
+  if (avatarPreviewGhost) avatarScene.remove(avatarPreviewGhost);
+  avatarPreviewGhost = createGhostMesh(av);
+  avatarScene.add(avatarPreviewGhost);
+}
+
+let tempAvatar;
+function buildColorPicker(av) {
+  tempAvatar = {...av};
+  const grid = document.getElementById('colorPicker');
+  grid.innerHTML = '';
+  COLORS.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (c.hex===av.color?' selected':'');
+    sw.style.background = c.hex;
+    sw.title = c.name;
+    sw.onclick = () => {
+      tempAvatar.color = c.hex;
+      grid.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));
+      sw.classList.add('selected');
+      refreshAvatarPreview(tempAvatar);
+    };
+    grid.appendChild(sw);
+  });
+}
+
+function buildEyePicker(av) {
+  const grid = document.getElementById('eyePicker');
+  grid.innerHTML = '';
+  EYES.forEach(e => {
+    const btn = document.createElement('div');
+    btn.className = 'option-btn' + (e.id===av.eyes?' selected':'');
+    btn.textContent = e.name;
+    btn.onclick = () => {
+      tempAvatar.eyes = e.id;
+      grid.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      refreshAvatarPreview(tempAvatar);
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function buildHatPicker(av) {
+  const grid = document.getElementById('hatPicker');
+  grid.innerHTML = '';
+  const owned = getOwned();
+  HATS.forEach(h => {
+    const btn = document.createElement('div');
+    const isOwned = h.price===0 || owned.includes('hat_'+h.id);
+    btn.className = 'option-btn' + (h.id===av.hat?' selected':'');
+    btn.innerHTML = h.name + (h.price>0 && !isOwned ? '<span class="price">💎'+h.price+'</span>' : h.price>0 ? '<span class="price" style="color:#34d399">Owned</span>' : '');
+    btn.onclick = () => {
+      if (h.price > 0 && !isOwned) {
+        if (getBiomes() < h.price) { toast('Not enough Biomes! 😢','#dc2626'); return; }
+        setBiomes(getBiomes()-h.price);
+        addOwned('hat_'+h.id);
+        toast('Bought '+h.name+'! 🎉','#059669');
+        buildHatPicker({...tempAvatar, hat:h.id});
+      }
+      tempAvatar.hat = h.id;
+      grid.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      refreshAvatarPreview(tempAvatar);
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function buildAccPicker(av) {
+  const grid = document.getElementById('accPicker');
+  grid.innerHTML = '';
+  const owned = getOwned();
+  ACCS.forEach(a => {
+    const btn = document.createElement('div');
+    const isOwned = a.price===0 || owned.includes('acc_'+a.id);
+    btn.className = 'option-btn' + (a.id===av.acc?' selected':'');
+    btn.innerHTML = a.name + (a.price>0 && !isOwned ? '<span class="price">💎'+a.price+'</span>' : a.price>0 ? '<span class="price" style="color:#34d399">Owned</span>' : '');
+    btn.onclick = () => {
+      if (a.price > 0 && !isOwned) {
+        if (getBiomes() < a.price) { toast('Not enough Biomes! 😢','#dc2626'); return; }
+        setBiomes(getBiomes()-a.price);
+        addOwned('acc_'+a.id);
+        toast('Bought '+a.name+'! 🎉','#059669');
+        buildAccPicker({...tempAvatar, acc:a.id});
+      }
+      tempAvatar.acc = a.id;
+      grid.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      refreshAvatarPreview(tempAvatar);
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function saveAvatar() {
+  const d = getUserData();
+  if (d) { d.avatar = {...tempAvatar}; saveUserData(d); }
+  toast('Avatar saved! 👻✨', '#059669');
+}
+
+// ============================================
+// ITEM SHOP
+// ============================================
+function initShop() {
+  updateAllBiomes();
+  const content = document.getElementById('shopContent');
+  content.innerHTML = '';
+  const owned = getOwned();
+
+  SHOP_ITEMS.forEach(cat => {
+    const freeItems = cat.items.filter(i=>i.price===0);
+    const premItems = cat.items.filter(i=>i.price>0);
+
+    if (freeItems.length) {
+      const h = document.createElement('div');
+      h.className = 'shop-section';
+      h.textContent = '🆓 Free ' + cat.cat;
+      content.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'shop-grid';
+      freeItems.forEach(item => grid.appendChild(createShopCard(item, owned)));
+      content.appendChild(grid);
+    }
+    if (premItems.length) {
+      const h = document.createElement('div');
+      h.className = 'shop-section';
+      h.textContent = '💎 Premium ' + cat.cat;
+      content.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'shop-grid';
+      premItems.forEach(item => grid.appendChild(createShopCard(item, owned)));
+      content.appendChild(grid);
+    }
+  });
+}
+
+function createShopCard(item, owned) {
+  const card = document.createElement('div');
+  const isOwned = owned.includes(item.id);
+  card.className = 'shop-item' + (isOwned?' owned':'');
+  card.innerHTML = '<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="price">'+(isOwned?'✅ Owned':(item.price===0?'FREE':'💎 '+item.price))+'</div>';
+  card.onclick = () => {
+    if (isOwned) { toast('You already own this!','#7c3aed'); return; }
+    if (item.price === 0) {
+      addOwned(item.id);
+      toast('Got '+item.name+'! 🎉','#059669');
+      initShop();
+      return;
+    }
+    if (getBiomes() < item.price) { toast('Not enough Biomes! 😢','#dc2626'); return; }
+    setBiomes(getBiomes() - item.price);
+    addOwned(item.id);
+    toast('Bought '+item.name+'! 🎉','#059669');
+    initShop();
+  };
+  return card;
+}
+
+// ============================================
+// 3D GAME
+// ============================================
+function startGame() {
+  gameRunning = true;
+  gameScore = 0;
+  gameVelocity = {x:0,y:0,z:0};
+  gameJumping = false;
+  gameOrbs = [];
+  gameObstacles = [];
+  document.getElementById('gameScore').textContent = '0';
+  document.getElementById('gameUser').textContent = currentUser || 'Player';
+  updateAllBiomes();
+
+  // Reuse the main renderer
+  gameScene = new THREE.Scene();
+  gameScene.background = new THREE.Color(0x1a0a3a);
+  gameScene.fog = new THREE.Fog(0x1a0a3a, 30, 80);
+
+  gameCamera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 200);
+
+  // Lighting
+  gameScene.add(new THREE.AmbientLight(0x8b5cf6, 0.5));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.7);
+  sun.position.set(10, 20, 10);
+  gameScene.add(sun);
+  const glow = new THREE.PointLight(0xc084fc, 0.5, 40);
+  glow.position.set(0, 5, 0);
+  gameScene.add(glow);
+
+  // Stars
+  const starGeo = new THREE.BufferGeometry();
+  const sv = [];
+  for (let i=0;i<800;i++) sv.push((Math.random()-0.5)*120, Math.random()*50+10, (Math.random()-0.5)*120);
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(sv,3));
+  gameScene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({color:0xffffff,size:0.15})));
+
+  // Ground
+  const groundGeo = new THREE.PlaneGeometry(100, 100);
+  const groundMat = new THREE.MeshPhongMaterial({color:0x22c55e, emissive:0x166534, emissiveIntensity:0.1});
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI/2;
+  ground.position.y = 0;
+  gameScene.add(ground);
+
+  // Grid lines on ground
+  const gridHelper = new THREE.GridHelper(100, 50, 0x15803d, 0x15803d);
+  gridHelper.position.y = 0.01;
+  gameScene.add(gridHelper);
+
+  // Build world
+  if (customLevelData) {
+    buildCustomLevel(customLevelData);
+    customLevelData = null;
+  } else {
+    buildDefaultWorld();
+  }
+
+  // Player ghost
+  const av = getAvatar();
+  gamePlayer = createGhostMesh(av);
+  gamePlayer.position.set(0, 0.8, 0);
+  gameScene.add(gamePlayer);
+
+  // Keyboard
+  document.addEventListener('keydown', onGameKeyDown);
+  document.addEventListener('keyup', onGameKeyUp);
+
+  // Mobile controls
+  setupMobileControls();
+
+  gameLoop();
+}
+
+function buildDefaultWorld() {
+  const buildingColors = [0x3b82f6, 0xef4444, 0xf59e0b, 0x8b5cf6, 0xec4899, 0x06b6d4];
+
+  // Buildings
+  for (let i=0; i<15; i++) {
+    const w = 2 + Math.random()*3;
+    const h = 2 + Math.random()*6;
+    const d = 2 + Math.random()*3;
+    const geo = new THREE.BoxGeometry(w, h, d);
+    const mat = new THREE.MeshPhongMaterial({color:buildingColors[i%buildingColors.length], emissive:buildingColors[i%buildingColors.length], emissiveIntensity:0.1});
+    const bldg = new THREE.Mesh(geo, mat);
+    bldg.position.set((Math.random()-0.5)*60, h/2, (Math.random()-0.5)*60);
+    gameScene.add(bldg);
+  }
+
+  // Trees
+  for (let i=0; i<25; i++) {
+    const tree = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.3,2,8), new THREE.MeshPhongMaterial({color:0x92400e}));
+    trunk.position.y = 1;
+    tree.add(trunk);
+    const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.2,2.5,8), new THREE.MeshPhongMaterial({color:0x22c55e,emissive:0x166534,emissiveIntensity:0.15}));
+    leaves.position.y = 3;
+    tree.add(leaves);
+    tree.position.set((Math.random()-0.5)*70, 0, (Math.random()-0.5)*70);
+    gameScene.add(tree);
+  }
+
+  // Orbs
+  for (let i=0; i<30; i++) {
+    spawnOrb((Math.random()-0.5)*50, 1.5+Math.random()*2, (Math.random()-0.5)*50);
+  }
+
+  // Obstacles
+  for (let i=0; i<12; i++) {
+    spawnObstacle((Math.random()-0.5)*40, 0.75, (Math.random()-0.5)*40);
+  }
+}
+
+function spawnOrb(x,y,z) {
+  const orb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.4, 16, 12),
+    new THREE.MeshPhongMaterial({color:0xfbbf24, emissive:0xfbbf24, emissiveIntensity:0.6, transparent:true, opacity:0.85})
+  );
+  orb.position.set(x,y,z);
+  // Glow
+  const glowMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.6, 12, 8),
+    new THREE.MeshBasicMaterial({color:0xfbbf24, transparent:true, opacity:0.15})
+  );
+  orb.add(glowMesh);
+  gameScene.add(orb);
+  gameOrbs.push(orb);
+}
+
+function spawnObstacle(x,y,z) {
+  const obs = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 1.5, 1.5),
+    new THREE.MeshPhongMaterial({color:0xef4444, emissive:0xdc2626, emissiveIntensity:0.2})
+  );
+  obs.position.set(x,y,z);
+  gameScene.add(obs);
+  gameObstacles.push(obs);
+}
+
+function onGameKeyDown(e) { gameKeys[e.code] = true; }
+function onGameKeyUp(e) { gameKeys[e.code] = false; }
+
+function setupMobileControls() {
+  const area = document.getElementById('joystickArea');
+  const knob = document.getElementById('joystickKnob');
+  const jumpBtn = document.getElementById('jumpBtn');
+
+  let touchId = null;
+  const centerX = 60, centerY = 60;
+
+  area.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    touchId = t.identifier;
+    joystickActive = true;
+    updateJoystick(t, area, knob, centerX, centerY);
+  }, {passive:false});
+
+  area.addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (let t of e.changedTouches) {
+      if (t.identifier === touchId) updateJoystick(t, area, knob, centerX, centerY);
+    }
+  }, {passive:false});
+
+  const endJoy = () => { joystickActive=false; joystickDX=0; joystickDZ=0; knob.style.left='35px'; knob.style.top='35px'; touchId=null; };
+  area.addEventListener('touchend', endJoy);
+  area.addEventListener('touchcancel', endJoy);
+
+  jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); if(!gameJumping){gameVelocity.y=0.18; gameJumping=true;} }, {passive:false});
+}
+
+function updateJoystick(touch, area, knob, cx, cy) {
+  const rect = area.getBoundingClientRect();
+  let dx = touch.clientX - rect.left - cx;
+  let dy = touch.clientY - rect.top - cy;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  const maxDist = 40;
+  if (dist > maxDist) { dx = dx/dist*maxDist; dy = dy/dist*maxDist; }
+  knob.style.left = (cx - 25 + dx) + 'px';
+  knob.style.top = (cy - 25 + dy) + 'px';
+  joystickDX = dx / maxDist;
+  joystickDZ = dy / maxDist;
+}
+
+let gameAnimId;
+function gameLoop() {
+  if (!gameRunning) return;
+  gameAnimId = requestAnimationFrame(gameLoop);
+
+  const speed = 0.12;
+  let moveX = 0, moveZ = 0;
+
+  // Keyboard
+  if (gameKeys['KeyW']||gameKeys['ArrowUp']) moveZ -= speed;
+  if (gameKeys['KeyS']||gameKeys['ArrowDown']) moveZ += speed;
+  if (gameKeys['KeyA']||gameKeys['ArrowLeft']) moveX -= speed;
+  if (gameKeys['KeyD']||gameKeys['ArrowRight']) moveX += speed;
+  if ((gameKeys['Space']) && !gameJumping) { gameVelocity.y = 0.18; gameJumping = true; }
+
+  // Mobile joystick
+  if (joystickActive) { moveX += joystickDX * speed; moveZ += joystickDZ * speed; }
+
+  gamePlayer.position.x += moveX;
+  gamePlayer.position.z += moveZ;
+
+  // Face direction
+  if (Math.abs(moveX) > 0.001 || Math.abs(moveZ) > 0.001) {
+    gamePlayer.rotation.y = Math.atan2(moveX, moveZ);
+  }
+
+  // Gravity
+  gameVelocity.y -= 0.008;
+  gamePlayer.position.y += gameVelocity.y;
+  if (gamePlayer.position.y <= 0.8) { gamePlayer.position.y = 0.8; gameVelocity.y = 0; gameJumping = false; }
+
+  // Clamp to world
+  gamePlayer.position.x = Math.max(-48, Math.min(48, gamePlayer.position.x));
+  gamePlayer.position.z = Math.max(-48, Math.min(48, gamePlayer.position.z));
+
+  // Camera follow
+  const camTarget = gamePlayer.position.clone().add(new THREE.Vector3(0, 4, 8));
+  gameCamera.position.lerp(camTarget, 0.05);
+  gameCamera.lookAt(gamePlayer.position.x, gamePlayer.position.y + 1, gamePlayer.position.z);
+
+  // Orb collection
+  const t = Date.now()*0.002;
+  for (let i=gameOrbs.length-1; i>=0; i--) {
+    const orb = gameOrbs[i];
+    orb.rotation.y += 0.03;
+    orb.position.y += Math.sin(t + i) * 0.003;
+    const dist = gamePlayer.position.distanceTo(orb.position);
+    if (dist < 1.2) {
+      gameScene.remove(orb);
+      gameOrbs.splice(i, 1);
+      gameScore += 10;
+      setBiomes(getBiomes() + 10);
+      document.getElementById('gameScore').textContent = gameScore;
+      toast('+10 Biomes! 💎', '#059669');
+    }
+  }
+
+  // Obstacle collision
+  gameObstacles.forEach(obs => {
+    obs.rotation.y += 0.01;
+    const dist = gamePlayer.position.distanceTo(obs.position);
+    if (dist < 1.5) {
+      const pushDir = gamePlayer.position.clone().sub(obs.position).normalize();
+      gamePlayer.position.add(pushDir.multiplyScalar(0.3));
+    }
+  });
+
+  // Ghost float animation
+  gamePlayer.position.y += Math.sin(Date.now()*0.003)*0.002;
+
+  renderer.render(gameScene, gameCamera);
+}
+
+function stopGame() {
+  gameRunning = false;
+  if (gameAnimId) cancelAnimationFrame(gameAnimId);
+  document.removeEventListener('keydown', onGameKeyDown);
+  document.removeEventListener('keyup', onGameKeyUp);
+  gameKeys = {};
+}
+
+function exitGame() {
+  stopGame();
+  showScreen('lobby');
+}
+
+// ============================================
+// LEVEL EDITOR
+// ============================================
+function initEditor() {
+  editorGrid = [];
+  for (let r=0;r<EDITOR_ROWS;r++) {
+    editorGrid[r] = [];
+    for (let c=0;c<EDITOR_COLS;c++) editorGrid[r][c] = 'empty';
+  }
+
+  // Toolbar
+  const tb = document.getElementById('editorToolbar');
+  tb.innerHTML = '';
+  const tools = [
+    {id:'ground',label:'🟩 Ground',color:'#22c55e'},
+    {id:'wall',label:'🧱 Wall',color:'#8b5cf6'},
+    {id:'obstacle',label:'🟥 Obstacle',color:'#ef4444'},
+    {id:'orb',label:'🟡 Orb',color:'#fbbf24'},
+    {id:'delete',label:'🗑 Delete',color:'#6b7280'}
+  ];
+  tools.forEach(t => {
+    const btn = document.createElement('div');
+    btn.className = 'tool-btn' + (t.id===editorTool?' selected':'');
+    btn.textContent = t.label;
+    btn.onclick = () => {
+      editorTool = t.id;
+      tb.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+    tb.appendChild(btn);
+  });
+
+  const canvas = document.getElementById('editorCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 600;
+  canvas.height = 400;
+
+  drawEditorGrid(ctx);
+
+  canvas.onmousedown = (e) => editorPlace(e, canvas, ctx);
+  canvas.onmousemove = (e) => { if(e.buttons===1) editorPlace(e,canvas,ctx); };
+  canvas.oncontextmenu = (e) => { e.preventDefault(); editorDelete(e,canvas,ctx); };
+
+  // Touch support for editor
+  canvas.ontouchstart = (e) => { e.preventDefault(); editorPlaceTouch(e,canvas,ctx); };
+  canvas.ontouchmove = (e) => { e.preventDefault(); editorPlaceTouch(e,canvas,ctx); };
+}
+
+function editorPlace(e, canvas, ctx) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  const x = (e.clientX - rect.left)*sx;
+  const y = (e.clientY - rect.top)*sy;
+  const col = Math.floor(x / (canvas.width/EDITOR_COLS));
+  const row = Math.floor(y / (canvas.height/EDITOR_ROWS));
+  if (row>=0 && row<EDITOR_ROWS && col>=0 && col<EDITOR_COLS) {
+    editorGrid[row][col] = editorTool === 'delete' ? 'empty' : editorTool;
+    drawEditorGrid(ctx);
+  }
+}
+
+function editorPlaceTouch(e, canvas, ctx) {
+  const t = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  const x = (t.clientX - rect.left)*sx;
+  const y = (t.clientY - rect.top)*sy;
+  const col = Math.floor(x / (canvas.width/EDITOR_COLS));
+  const row = Math.floor(y / (canvas.height/EDITOR_ROWS));
+  if (row>=0 && row<EDITOR_ROWS && col>=0 && col<EDITOR_COLS) {
+    editorGrid[row][col] = editorTool === 'delete' ? 'empty' : editorTool;
+    drawEditorGrid(ctx);
+  }
+}
+
+function editorDelete(e, canvas, ctx) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  const x = (e.clientX - rect.left)*sx;
+  const y = (e.clientY - rect.top)*sy;
+  const col = Math.floor(x / (canvas.width/EDITOR_COLS));
+  const row = Math.floor(y / (canvas.height/EDITOR_ROWS));
+  if (row>=0 && row<EDITOR_ROWS && col>=0 && col<EDITOR_COLS) {
+    editorGrid[row][col] = 'empty';
+    drawEditorGrid(ctx);
+  }
+}
+
+function drawEditorGrid(ctx) {
+  const cw = ctx.canvas.width / EDITOR_COLS;
+  const ch = ctx.canvas.height / EDITOR_ROWS;
+  ctx.fillStyle = '#1a0a2e';
+  ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+
+  const colors = {empty:'#1e1040', ground:'#22c55e', wall:'#7c3aed', obstacle:'#ef4444', orb:'#fbbf24'};
+
+  for (let r=0;r<EDITOR_ROWS;r++) {
+    for (let c=0;c<EDITOR_COLS;c++) {
+      const type = editorGrid[r][c];
+      ctx.fillStyle = colors[type] || '#1e1040';
+      ctx.fillRect(c*cw+1, r*ch+1, cw-2, ch-2);
+      ctx.strokeStyle = '#2d1b69';
+      ctx.strokeRect(c*cw, r*ch, cw, ch);
+      if (type === 'orb') {
+        ctx.fillStyle = '#fef3c7';
+        ctx.beginPath();
+        ctx.arc(c*cw+cw/2, r*ch+ch/2, Math.min(cw,ch)*0.25, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+function saveLevelCode() {
+  const code = btoa(JSON.stringify(editorGrid));
+  document.getElementById('levelCodeArea').value = code;
+  toast('Level code copied! Share it! 📋','#059669');
+  // Also save to user data
+  const d = getUserData();
+  if(d){d.lastLevel=code; saveUserData(d);}
+}
+
+function loadLevelCode() {
+  const code = document.getElementById('levelCodeArea').value.trim();
+  if (!code) { toast('Paste a level code first!','#dc2626'); return; }
+  try {
+    editorGrid = JSON.parse(atob(code));
+    const canvas = document.getElementById('editorCanvas');
+    drawEditorGrid(canvas.getContext('2d'));
+    toast('Level loaded! 🎉','#059669');
+  } catch(e) {
+    toast('Invalid level code! 😢','#dc2626');
+  }
+}
+
+function clearEditor() {
+  for (let r=0;r<EDITOR_ROWS;r++) for(let c=0;c<EDITOR_COLS;c++) editorGrid[r][c]='empty';
+  const canvas = document.getElementById('editorCanvas');
+  drawEditorGrid(canvas.getContext('2d'));
+  toast('Level cleared!','#7c3aed');
+}
+
+function playCustomLevel() {
+  // Convert grid to 3D level data
+  customLevelData = editorGrid;
+  showScreen('game');
+}
+
+function buildCustomLevel(grid) {
+  const scaleX = 3, scaleZ = 3;
+  const offsetX = -(EDITOR_COLS*scaleX)/2;
+  const offsetZ = -(EDITOR_ROWS*scaleZ)/2;
+
+  for (let r=0;r<EDITOR_ROWS;r++) {
+    for (let c=0;c<EDITOR_COLS;c++) {
+      const type = grid[r][c];
+      const x = c*scaleX + offsetX + scaleX/2;
+      const z = r*scaleZ + offsetZ + scaleZ/2;
+
+      if (type === 'ground') {
+        const block = new THREE.Mesh(new THREE.BoxGeometry(scaleX,0.5,scaleZ), new THREE.MeshPhongMaterial({color:0x22c55e,emissive:0x166534,emissiveIntensity:0.1}));
+        block.position.set(x, 0.25, z);
+        gameScene.add(block);
+      } else if (type === 'wall') {
+        const block = new THREE.Mesh(new THREE.BoxGeometry(scaleX,3,scaleZ), new THREE.MeshPhongMaterial({color:0x7c3aed,emissive:0x4c1d95,emissiveIntensity:0.15}));
+        block.position.set(x, 1.5, z);
+        gameScene.add(block);
+      } else if (type === 'obstacle') {
+        spawnObstacle(x, 0.75, z);
+      } else if (type === 'orb') {
+        spawnOrb(x, 2, z);
+      }
+    }
+  }
+}
+
+// ============================================
+// RESIZE HANDLER
+// ============================================
+window.addEventListener('resize', () => {
+  const w = window.innerWidth, h = window.innerHeight;
+  if (renderer) { renderer.setSize(w,h); }
+  if (bgCamera) { bgCamera.aspect = w/h; bgCamera.updateProjectionMatrix(); }
+  if (gameCamera) { gameCamera.aspect = w/h; gameCamera.updateProjectionMatrix(); }
+});
+
+// ============================================
+// INIT
+// ============================================
+initBackground();
+
+// Enter key on login
+document.getElementById('passwordInput').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('usernameInput').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('passwordInput').focus(); });
+</script>
+</body>
+</html>

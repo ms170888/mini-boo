@@ -179,6 +179,14 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
 .tool-btn:hover,.tool-btn.selected { background:#7c3aed; }
 #levelCodeArea { width:100%; max-width:500px; height:60px; background:rgba(0,0,0,.3); border:2px solid #7c3aed; border-radius:10px; color:#fff; font-family:monospace; font-size:12px; padding:8px; resize:none; margin:8px auto; display:block; }
 
+/* Game chat box */
+#gameChatBox {
+  position:fixed; bottom:10px; right:10px; z-index:16;
+  width:220px; max-width:44vw; background:rgba(20,5,50,.82); border:2px solid #7c3aed;
+  border-radius:14px; padding:8px 12px; max-height:110px; overflow-y:auto; display:none;
+}
+#gameChatBox .chat-msg { font-size:12px; margin:2px 0; }
+
 @media (pointer:coarse) { #mobileControls { display:block; } }
 @media (max-width:500px) {
   .portal-grid { grid-template-columns:1fr 1fr; gap:10px; padding:12px; max-width:100%; }
@@ -278,6 +286,7 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
     <div class="biomes-display">💎 <span id="gameBiomes">100</span></div>
     <div>⭐ <span id="gameScore">0</span></div>
   </div>
+  <div id="gameChatBox"></div>
   <div id="mobileControls">
     <div id="joystickArea"><div id="joystickKnob"></div></div>
     <div id="jumpBtn">JUMP</div>
@@ -318,6 +327,7 @@ let editorGrid = [];
 const EDITOR_COLS = 20, EDITOR_ROWS = 15;
 let editorTool = 'ground';
 let customLevelData = null;
+let gameBots = [], botChatInterval;
 
 const COLORS = [
   {name:'White',hex:'#f0f0f0'},{name:'Blue',hex:'#60a5fa'},{name:'Pink',hex:'#f9a8d4'},
@@ -354,6 +364,12 @@ const NPC_MESSAGES = [
   "Ghost Friend: Jump over the obstacles!","Boo Bot: Have fun exploring! 🌟",
   "Ghost Friend: Nice hat! 👑","Boo Bot: You're doing great! ⭐"
 ];
+
+const BOT_NAMES = ["GhostKing","BooMaster","SpookyPro","NeonGhost","CoolBoo","ShadowBoo","MiniPro","StarBoo"];
+const BOT_COLORS = ['#60a5fa','#f9a8d4','#6ee7b7','#fde68a','#c084fc','#fca5a5','#fdba74','#a78bfa'];
+const BOT_HATS = ['none','crown','wizard','cap','none','none'];
+const BOT_ACCS = ['none','glasses','cape','wings','none','none'];
+const BOT_MESSAGES = ["gg!","anyone wanna trade?","I love this game","nice hat!","where are the orbs?","lol","this map is cool","hi everyone!","brb","omg that jump 😱","let's gooo 🔥","collecting all the orbs 💎","this place is huge","anyone else lagging? 😂","love the vibes here ✨"];
 
 // ============================================
 // UTILITY
@@ -928,6 +944,10 @@ function startGame() {
   gamePlayer.position.set(0, 0.8, 0);
   gameScene.add(gamePlayer);
 
+  // Bot players
+  initGameBots();
+  startBotChat();
+
   // Keyboard
   document.addEventListener('keydown', onGameKeyDown);
   document.addEventListener('keyup', onGameKeyUp);
@@ -1119,20 +1139,165 @@ function gameLoop() {
   // Ghost float animation
   gamePlayer.position.y += Math.sin(Date.now()*0.003)*0.002;
 
+  // Update bot players
+  updateBots();
+
   renderer.render(gameScene, gameCamera);
 }
 
 function stopGame() {
   gameRunning = false;
   if (gameAnimId) cancelAnimationFrame(gameAnimId);
+  if (botChatInterval) { clearInterval(botChatInterval); botChatInterval = null; }
   document.removeEventListener('keydown', onGameKeyDown);
   document.removeEventListener('keyup', onGameKeyUp);
   gameKeys = {};
+  gameBots = [];
+  const gcb = document.getElementById('gameChatBox');
+  if (gcb) { gcb.style.display = 'none'; gcb.innerHTML = ''; }
 }
 
 function exitGame() {
   stopGame();
   showScreen('lobby');
+}
+
+// ============================================
+// BOT PLAYERS
+// ============================================
+function createBotLabel(name) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 56;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 256, 56);
+  ctx.fillStyle = 'rgba(20,5,50,0.78)';
+  ctx.beginPath();
+  ctx.rect(4, 4, 248, 48);
+  ctx.fill();
+  ctx.font = 'bold 26px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(name, 128, 29);
+  const texture = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({map: texture, transparent: true, depthTest: false});
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2.2, 0.5, 1);
+  sprite.position.y = 2.1;
+  return sprite;
+}
+
+function initGameBots() {
+  gameBots = [];
+  const shuffledNames = [...BOT_NAMES].sort(() => Math.random() - 0.5);
+  const count = 5 + Math.floor(Math.random() * 4); // 5-8 bots
+  for (let i = 0; i < count; i++) {
+    const color = BOT_COLORS[i % BOT_COLORS.length];
+    const hat = BOT_HATS[Math.floor(Math.random() * BOT_HATS.length)];
+    const acc = BOT_ACCS[Math.floor(Math.random() * BOT_ACCS.length)];
+    const eyes = ['normal','happy','cool'][Math.floor(Math.random() * 3)];
+    const avatar = {color, eyes, hat, acc};
+    const mesh = createGhostMesh(avatar);
+    const x = (Math.random() - 0.5) * 60;
+    const z = (Math.random() - 0.5) * 60;
+    mesh.position.set(x, 0.8, z);
+    const label = createBotLabel(shuffledNames[i]);
+    mesh.add(label);
+    gameScene.add(mesh);
+    gameBots.push({
+      mesh,
+      name: shuffledNames[i],
+      targetX: (Math.random() - 0.5) * 60,
+      targetZ: (Math.random() - 0.5) * 60,
+      speed: 0.03 + Math.random() * 0.04,
+      jumpTimer: Math.floor(Math.random() * 300),
+      velY: 0,
+      jumping: false,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function updateBots() {
+  const t = Date.now() * 0.002;
+  gameBots.forEach(bot => {
+    const pos = bot.mesh.position;
+    const dx = bot.targetX - pos.x;
+    const dz = bot.targetZ - pos.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < 1.5) {
+      bot.targetX = (Math.random() - 0.5) * 60;
+      bot.targetZ = (Math.random() - 0.5) * 60;
+    } else {
+      pos.x += (dx / dist) * bot.speed;
+      pos.z += (dz / dist) * bot.speed;
+      bot.mesh.rotation.y = Math.atan2(dx, dz);
+    }
+    pos.x = Math.max(-48, Math.min(48, pos.x));
+    pos.z = Math.max(-48, Math.min(48, pos.z));
+
+    // Jumping
+    bot.jumpTimer--;
+    if (bot.jumpTimer <= 0 && !bot.jumping) {
+      bot.velY = 0.15;
+      bot.jumping = true;
+      bot.jumpTimer = 150 + Math.floor(Math.random() * 350);
+    }
+    bot.velY -= 0.008;
+    pos.y += bot.velY;
+    if (pos.y <= 0.8) { pos.y = 0.8; bot.velY = 0; bot.jumping = false; }
+
+    // Gentle float
+    pos.y += Math.sin(t + bot.phase) * 0.002;
+
+    // Bot collects nearby orbs
+    for (let i = gameOrbs.length - 1; i >= 0; i--) {
+      const orb = gameOrbs[i];
+      if (pos.distanceTo(orb.position) < 1.5) {
+        const rx = orb.position.x, rz = orb.position.z;
+        gameScene.remove(orb);
+        gameOrbs.splice(i, 1);
+        setTimeout(() => { if (gameRunning) spawnOrb(rx, 1.5 + Math.random(), rz); }, 5000);
+        break;
+      }
+    }
+  });
+}
+
+function startBotChat() {
+  if (botChatInterval) clearInterval(botChatInterval);
+  const gcb = document.getElementById('gameChatBox');
+  if (gcb) gcb.style.display = 'block';
+
+  // Post a welcome message immediately
+  setTimeout(() => {
+    if (!gameRunning || gameBots.length === 0) return;
+    const bot = gameBots[Math.floor(Math.random() * gameBots.length)];
+    addGameChatMessage(bot.name, "hi everyone! 👋");
+  }, 2000);
+
+  function scheduleNext() {
+    const delay = 8000 + Math.random() * 7000;
+    botChatInterval = setTimeout(() => {
+      if (!gameRunning || gameBots.length === 0) return;
+      const bot = gameBots[Math.floor(Math.random() * gameBots.length)];
+      const msg = BOT_MESSAGES[Math.floor(Math.random() * BOT_MESSAGES.length)];
+      addGameChatMessage(bot.name, msg);
+      scheduleNext();
+    }, delay);
+  }
+  scheduleNext();
+}
+
+function addGameChatMessage(name, msg) {
+  const gcb = document.getElementById('gameChatBox');
+  if (!gcb) return;
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.innerHTML = '<span class="chat-name">' + name + ':</span> ' + msg;
+  gcb.appendChild(div);
+  gcb.scrollTop = gcb.scrollHeight;
+  if (gcb.children.length > 15) gcb.removeChild(gcb.children[0]);
 }
 
 // ============================================

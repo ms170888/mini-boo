@@ -503,9 +503,30 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
   #loginScreen h1 { font-size:30px; }
   .shop-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); }
 }
+
+/* Music toggle button */
+#musicToggle {
+  position:fixed; bottom:15px; right:15px; z-index:99;
+  width:48px; height:48px; border-radius:50%;
+  background:rgba(20,5,50,.85); border:2px solid #7c3aed;
+  color:#fff; font-size:22px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .15s, background .2s;
+  box-shadow:0 2px 10px rgba(124,58,237,.3);
+}
+#musicToggle:hover { transform:scale(1.1); background:rgba(124,58,237,.5); }
+#musicToggle.muted { opacity:0.5; }
 </style>
 </head>
 <body>
+
+<!-- Background Music -->
+<audio id="bgMusic" loop preload="auto">
+  <source src="https://cdn.pixabay.com/audio/2024/11/01/audio_7cfc554099.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Music Toggle Button -->
+<button id="musicToggle" onclick="toggleMusic()" title="Toggle Music">🎵</button>
 
 <!-- Toast -->
 <div id="toast"></div>
@@ -940,6 +961,47 @@ const BOT_MESSAGES = ["gg!","anyone wanna trade?","I love this game","nice hat!"
 // ============================================
 // UTILITY
 // ============================================
+// ============================================
+// BACKGROUND MUSIC
+// ============================================
+let musicPlaying = false;
+const bgMusic = document.getElementById('bgMusic');
+bgMusic.volume = 0.3;
+
+function toggleMusic() {
+  const btn = document.getElementById('musicToggle');
+  if (musicPlaying) {
+    bgMusic.pause();
+    musicPlaying = false;
+    btn.textContent = '🔇';
+    btn.classList.add('muted');
+  } else {
+    bgMusic.play().then(() => {
+      musicPlaying = true;
+      btn.textContent = '🎵';
+      btn.classList.remove('muted');
+    }).catch(() => {
+      // Autoplay blocked, will work after user interaction
+      toast('Tap again to start music!', '#7c3aed');
+    });
+  }
+}
+
+// Auto-start music on first user interaction
+function startMusicOnInteraction() {
+  if (!musicPlaying) {
+    bgMusic.play().then(() => {
+      musicPlaying = true;
+      document.getElementById('musicToggle').textContent = '🎵';
+      document.getElementById('musicToggle').classList.remove('muted');
+    }).catch(() => {});
+  }
+  document.removeEventListener('click', startMusicOnInteraction);
+  document.removeEventListener('touchstart', startMusicOnInteraction);
+}
+document.addEventListener('click', startMusicOnInteraction);
+document.addEventListener('touchstart', startMusicOnInteraction);
+
 function toast(msg, color='#7c3aed') {
   const t = document.getElementById('toast');
   t.textContent = msg; t.style.background = color; t.style.display = 'block';

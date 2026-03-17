@@ -226,6 +226,67 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
   align-items:center; justify-content:center;
 }
 
+/* Shooter portal */
+.portal-shooter { background:linear-gradient(135deg,#f97316,#dc2626); border-color:#fed7aa; }
+
+/* Shooter HUD */
+#shooterHud {
+  position:fixed; top:15px; right:20px; z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #7c3aed; border-radius:14px; padding:10px 18px;
+  font-size:16px; display:none;
+}
+
+/* Shooter player health bar */
+#shooterHealthBar {
+  position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:16;
+  display:none; flex-direction:column; align-items:center; gap:4px;
+  background:rgba(20,5,50,.85); border:2px solid #7c3aed; border-radius:14px; padding:8px 16px; white-space:nowrap;
+}
+#shooterHealthLabel { font-size:13px; color:#a78bfa; }
+#shooterHealthBarTrack {
+  width:180px; height:14px; background:rgba(0,0,0,.5); border-radius:7px;
+  border:2px solid #374151; overflow:hidden;
+}
+#shooterHealthBarFill {
+  height:100%; width:100%; background:linear-gradient(90deg,#22c55e,#4ade80);
+  border-radius:5px; transition:width .15s, background .3s;
+}
+
+/* Crosshair */
+#crosshair {
+  position:fixed; top:50%; left:50%; z-index:16; pointer-events:none; display:none;
+  width:24px; height:24px; transform:translate(-50%,-50%);
+}
+#crosshair::before { content:''; position:absolute; width:2px; height:24px; left:11px; top:0; background:rgba(255,255,255,.8); }
+#crosshair::after { content:''; position:absolute; width:24px; height:2px; top:11px; left:0; background:rgba(255,255,255,.8); }
+.crosshair-dot { position:absolute; width:4px; height:4px; border-radius:50%; background:#fbbf24; top:10px; left:10px; opacity:.9; }
+
+/* Shooter mobile controls */
+#shooterMobileControls { display:none; position:fixed; bottom:0; left:0; width:100%; height:220px; z-index:16; pointer-events:none; }
+#shooterJoystickArea {
+  position:absolute; bottom:30px; left:30px; width:120px; height:120px;
+  border-radius:50%; background:rgba(124,58,237,.3); border:3px solid rgba(124,58,237,.5);
+  pointer-events:auto; touch-action:none;
+}
+#shooterJoystickKnob {
+  position:absolute; width:50px; height:50px; border-radius:50%;
+  background:rgba(167,139,250,.7); top:35px; left:35px; pointer-events:none;
+}
+#shooterShootBtn {
+  position:absolute; bottom:30px; right:30px; width:84px; height:84px; border-radius:50%;
+  background:rgba(249,115,22,.5); border:3px solid rgba(249,115,22,.85);
+  font-family:'Fredoka One',cursive; font-size:28px; color:#fff; pointer-events:auto;
+  display:flex; align-items:center; justify-content:center; touch-action:none;
+}
+@media (pointer:coarse) { #shooterMobileControls { display:block; } }
+
+/* Shooter death overlay */
+#shooterDeathOverlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  z-index:50; background:rgba(0,0,0,.82); flex-direction:column;
+  align-items:center; justify-content:center;
+}
+
 @media (max-width:500px) {
   .portal-grid { grid-template-columns:1fr 1fr; gap:10px; padding:12px; max-width:100%; }
   .portal-btn { padding:16px 10px; font-size:14px; }
@@ -272,7 +333,8 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
     <div class="portal-btn portal-avatar" onclick="showScreen('avatar')"><span class="emoji">👻</span>Avatar Editor</div>
     <div class="portal-btn portal-shop" onclick="showScreen('shop')"><span class="emoji">🛒</span>Item Shop</div>
     <div class="portal-btn portal-editor" onclick="showScreen('editor')"><span class="emoji">🔧</span>Level Editor</div>
-    <div class="portal-btn portal-obby" onclick="showScreen('obby')" style="grid-column:1/-1"><span class="emoji">🏃</span>Obby Course</div>
+    <div class="portal-btn portal-obby" onclick="showScreen('obby')"><span class="emoji">🏃</span>Obby Course</div>
+    <div class="portal-btn portal-shooter" onclick="showScreen('shooter')" style="grid-column:1/-1"><span class="emoji">🔫</span>Shooter Arena</div>
   </div>
   <div id="chatBox">
     <div class="chat-msg"><span class="chat-npc">🤖 Boo Bot:</span> Welcome to Mini Boo! Pick a door!</div>
@@ -378,6 +440,38 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
   </div>
 </div>
 
+<!-- SCREEN 8: Shooter -->
+<div id="shooterScreen" class="screen">
+  <button class="btn btn-purple btn-sm btn-back" onclick="exitShooter()">← Lobby</button>
+  <div id="shooterHud">
+    <div>👻 <span id="shooterUser">Player</span></div>
+    <div class="biomes-display">💎 <span id="shooterBiomesDisplay">100</span></div>
+    <div style="color:#f97316">🔫 Kills: <span id="shooterKills">0</span></div>
+  </div>
+  <div id="shooterHealthBar">
+    <span id="shooterHealthLabel">❤️ HP: <span id="shooterHpNum">100</span></span>
+    <div id="shooterHealthBarTrack"><div id="shooterHealthBarFill"></div></div>
+  </div>
+  <div id="crosshair"><div class="crosshair-dot"></div></div>
+  <div id="shooterMobileControls">
+    <div id="shooterJoystickArea"><div id="shooterJoystickKnob"></div></div>
+    <div id="shooterShootBtn">🔥</div>
+  </div>
+</div>
+
+<!-- Shooter Death Overlay -->
+<div id="shooterDeathOverlay">
+  <div class="panel" style="text-align:center;max-width:380px;">
+    <div style="font-size:64px;margin-bottom:8px">💀</div>
+    <h2 style="color:#ef4444;font-size:40px;margin-bottom:10px">YOU DIED!</h2>
+    <p style="color:#a78bfa;font-size:16px;margin-bottom:20px">Kills this run: <span id="shooterDeathKills" style="color:#fbbf24">0</span></p>
+    <div>
+      <button class="btn btn-purple" onclick="exitShooter()">← Lobby</button>
+      <button class="btn btn-red" onclick="restartShooter()" style="margin-left:8px">🔄 Respawn</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================
 // GLOBAL STATE
@@ -400,6 +494,18 @@ let obbyKeys = {}, obbyAnimId;
 let obbyPlatforms = [], obbyParticleSystem = null;
 let obbyTimerStart = 0, obbyCheckpointReached = 0;
 let obbyCheckpointPos = [], obbyCheckpointsEarned = new Set();
+// Shooter state
+let shooterRunning = false, shooterDead = false;
+let shooterScene, shooterCamera;
+let shooterPlayer, shooterPlayerMesh;
+let shooterVelocity = {x:0,y:0,z:0};
+let shooterKeys = {}, shooterAnimId;
+let shooterJoystickActive = false, shooterJoystickDX = 0, shooterJoystickDZ = 0;
+let shooterPlayerHp = 100, shooterKillCount = 0;
+let shooterProjectiles = [], shooterEnemyBots = [];
+let shooterLastShot = 0, shooterFlashTimer = 0;
+let shooterParticles = [];
+
 let editorGrid = [];
 const EDITOR_COLS = 20, EDITOR_ROWS = 15;
 let editorTool = 'ground';
@@ -487,6 +593,8 @@ function updateAllBiomes() {
   document.getElementById('gameBiomes').textContent = b;
   const obd = document.getElementById('obbyBiomesDisplay');
   if (obd) obd.textContent = b;
+  const sbd = document.getElementById('shooterBiomesDisplay');
+  if (sbd) sbd.textContent = b;
 }
 
 // ============================================
@@ -541,9 +649,11 @@ function showScreen(name) {
   if (name === 'game') startGame();
   if (name === 'editor') initEditor();
   if (name === 'obby') startObby();
+  if (name === 'shooter') startShooter();
 
   if (name !== 'game' && gameRunning) stopGame();
   if (name !== 'obby' && obbyRunning) stopObby();
+  if (name !== 'shooter' && shooterRunning) stopShooter();
 }
 
 // ============================================
@@ -1992,6 +2102,555 @@ function restartObby() {
 }
 
 // ============================================
+// SHOOTER GAME
+// ============================================
+const SHOOTER_BOT_COLORS = ['#60a5fa','#f9a8d4','#fca5a5','#c084fc','#fdba74'];
+const SHOOTER_BOT_COUNT = 4;
+const SHOOTER_PROJECTILE_DAMAGE = 20;
+const SHOOTER_ARENA_SIZE = 28;
+
+function startShooter() {
+  shooterRunning = true;
+  shooterDead = false;
+  shooterPlayerHp = 100;
+  shooterKillCount = 0;
+  shooterProjectiles = [];
+  shooterEnemyBots = [];
+  shooterParticles = [];
+  shooterLastShot = 0;
+  shooterFlashTimer = 0;
+  shooterKeys = {};
+  shooterJoystickActive = false;
+  shooterJoystickDX = 0;
+  shooterJoystickDZ = 0;
+
+  document.getElementById('shooterUser').textContent = currentUser || 'Player';
+  document.getElementById('shooterKills').textContent = '0';
+  document.getElementById('shooterHpNum').textContent = '100';
+  document.getElementById('shooterHealthBarFill').style.width = '100%';
+  document.getElementById('shooterHealthBarFill').style.background = 'linear-gradient(90deg,#22c55e,#4ade80)';
+  document.getElementById('shooterHud').style.display = 'block';
+  document.getElementById('shooterHealthBar').style.display = 'flex';
+  document.getElementById('crosshair').style.display = 'block';
+  document.getElementById('shooterDeathOverlay').style.display = 'none';
+  updateAllBiomes();
+
+  shooterScene = new THREE.Scene();
+  shooterScene.background = new THREE.Color(0x0d0428);
+  shooterScene.fog = new THREE.Fog(0x0d0428, 40, 80);
+
+  shooterCamera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 200);
+
+  // Lighting
+  shooterScene.add(new THREE.AmbientLight(0x6d28d9, 0.5));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+  sun.position.set(8, 20, 8);
+  shooterScene.add(sun);
+  const glow = new THREE.PointLight(0x8b5cf6, 1.2, 50);
+  glow.position.set(0, 6, 0);
+  shooterScene.add(glow);
+  const glow2 = new THREE.PointLight(0xf97316, 0.5, 40);
+  glow2.position.set(0, 3, 0);
+  shooterScene.add(glow2);
+
+  // Stars
+  const sv = [];
+  for (let i=0;i<600;i++) sv.push((Math.random()-0.5)*120, Math.random()*40+8, (Math.random()-0.5)*120);
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(sv,3));
+  shooterScene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({color:0xffffff,size:0.12})));
+
+  buildShooterArena();
+
+  // Player ghost
+  const av = getAvatar();
+  shooterPlayerMesh = createGhostMesh(av);
+  shooterPlayerMesh.position.set(0, 0.8, 0);
+  shooterScene.add(shooterPlayerMesh);
+  shooterPlayer = shooterPlayerMesh;
+
+  // Spawn enemy bots
+  for (let i=0; i<SHOOTER_BOT_COUNT; i++) {
+    spawnShooterBot(i);
+  }
+
+  // Controls
+  document.addEventListener('keydown', onShooterKeyDown);
+  document.addEventListener('keyup', onShooterKeyUp);
+  document.addEventListener('mousedown', onShooterMouseDown);
+  setupShooterMobileControls();
+
+  shooterLoop();
+}
+
+function buildShooterArena() {
+  const A = SHOOTER_ARENA_SIZE;
+  // Floor
+  const floorMat = new THREE.MeshPhongMaterial({color:0x1e0a4e, emissive:0x0d0520, emissiveIntensity:0.3});
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(A*2, A*2), floorMat);
+  floor.rotation.x = -Math.PI/2;
+  floor.position.y = 0;
+  shooterScene.add(floor);
+
+  // Neon grid
+  const grid = new THREE.GridHelper(A*2, 28, 0x7c3aed, 0x4b2080);
+  grid.position.y = 0.01;
+  shooterScene.add(grid);
+
+  // Perimeter walls (neon-edged)
+  const wallColor = 0x4c1d95;
+  const wallEmissive = 0x8b5cf6;
+  const wallDefs = [
+    {pos:[0, 2, -A],  size:[A*2, 4, 0.8]},
+    {pos:[0, 2,  A],  size:[A*2, 4, 0.8]},
+    {pos:[-A, 2, 0],  size:[0.8, 4, A*2]},
+    {pos:[ A, 2, 0],  size:[0.8, 4, A*2]},
+  ];
+  wallDefs.forEach(w => {
+    const mat = new THREE.MeshPhongMaterial({color:wallColor, emissive:wallEmissive, emissiveIntensity:0.5});
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...w.size), mat);
+    mesh.position.set(...w.pos);
+    shooterScene.add(mesh);
+    // Neon edge
+    const edge = new THREE.Mesh(
+      new THREE.BoxGeometry(w.size[0]+0.1, w.size[1]+0.1, w.size[2]+0.1),
+      new THREE.MeshBasicMaterial({color:0xa78bfa, wireframe:true, transparent:true, opacity:0.3})
+    );
+    edge.position.set(...w.pos);
+    shooterScene.add(edge);
+  });
+
+  // Cover crates scattered around arena
+  const cratePositions = [
+    [-8, 0, -8], [8, 0, -8], [-8, 0, 8], [8, 0, 8],
+    [0, 0, -14], [0, 0, 14], [-14, 0, 0], [14, 0, 0],
+    [-5, 0, 3], [5, 0, -3], [-3, 0, -6], [3, 0, 6],
+    [10, 0, -6], [-10, 0, 6]
+  ];
+  cratePositions.forEach(cp => {
+    const sz = 1.5 + Math.random()*0.8;
+    const h = sz * (0.8 + Math.random()*0.8);
+    const cMat = new THREE.MeshPhongMaterial({color:0x5b21b6, emissive:0x6d28d9, emissiveIntensity:0.4});
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(sz, h, sz), cMat);
+    crate.position.set(cp[0], h/2, cp[2]);
+    shooterScene.add(crate);
+    // Neon edge
+    const edge2 = new THREE.Mesh(
+      new THREE.BoxGeometry(sz+0.1, h+0.1, sz+0.1),
+      new THREE.MeshBasicMaterial({color:0xc084fc, wireframe:true, transparent:true, opacity:0.4})
+    );
+    edge2.position.set(cp[0], h/2, cp[2]);
+    shooterScene.add(edge2);
+  });
+}
+
+function spawnShooterBot(idx) {
+  const color = SHOOTER_BOT_COLORS[idx % SHOOTER_BOT_COLORS.length];
+  const eyes = ['normal','happy','cool'][idx % 3];
+  const avatar = {color, eyes, hat:'none', acc:'none'};
+  const mesh = createGhostMesh(avatar);
+
+  // Pick random spawn away from player
+  const angle = (idx / SHOOTER_BOT_COUNT) * Math.PI * 2 + Math.random()*0.5;
+  const dist = 12 + Math.random()*10;
+  const x = Math.cos(angle) * dist;
+  const z = Math.sin(angle) * dist;
+  mesh.position.set(x, 0.8, z);
+  shooterScene.add(mesh);
+
+  // Bot health bar (floating sprite)
+  const hbCanvas = document.createElement('canvas');
+  hbCanvas.width = 128; hbCanvas.height = 20;
+  const hbCtx = hbCanvas.getContext('2d');
+  const hbTex = new THREE.CanvasTexture(hbCanvas);
+  const hbSprite = new THREE.Sprite(new THREE.SpriteMaterial({map:hbTex, transparent:true, depthTest:false}));
+  hbSprite.scale.set(1.8, 0.28, 1);
+  hbSprite.position.y = 2.2;
+  mesh.add(hbSprite);
+
+  const bot = {
+    mesh, hp: 100, maxHp: 100, color,
+    idx,
+    targetX: (Math.random()-0.5)*SHOOTER_ARENA_SIZE*1.6,
+    targetZ: (Math.random()-0.5)*SHOOTER_ARENA_SIZE*1.6,
+    speed: 0.04 + Math.random()*0.02,
+    phase: Math.random()*Math.PI*2,
+    lastShot: Date.now() + Math.random()*2000,
+    shotInterval: 2000 + Math.random()*1000,
+    hbSprite, hbTex, hbCtx, hbCanvas,
+    dead: false, respawnTimer: 0
+  };
+  updateBotHealthBar(bot);
+  shooterEnemyBots.push(bot);
+}
+
+function updateBotHealthBar(bot) {
+  const ctx = bot.hbCtx;
+  ctx.clearRect(0,0,128,20);
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0,0,128,20);
+  const pct = Math.max(0, bot.hp / bot.maxHp);
+  ctx.fillStyle = pct > 0.5 ? '#ef4444' : (pct > 0.25 ? '#f97316' : '#dc2626');
+  ctx.fillRect(2, 3, (124)*pct, 14);
+  ctx.strokeStyle = '#7c3aed';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1,1,126,18);
+  bot.hbTex.needsUpdate = true;
+}
+
+function shootProjectile(fromPos, dirX, dirZ, fromPlayer) {
+  const mat = new THREE.MeshPhongMaterial({
+    color: 0xfbbf24, emissive: 0xf97316, emissiveIntensity: 1.2,
+    transparent: true, opacity: 0.95
+  });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), mat);
+  // Glow
+  const glow = new THREE.Mesh(
+    new THREE.SphereGeometry(0.38, 8, 6),
+    new THREE.MeshBasicMaterial({color:0xf97316, transparent:true, opacity:0.25})
+  );
+  mesh.add(glow);
+  mesh.position.set(fromPos.x, fromPos.y + 0.5, fromPos.z);
+  const len = Math.sqrt(dirX*dirX + dirZ*dirZ) || 1;
+  const proj = {
+    mesh,
+    vx: (dirX/len)*0.55,
+    vz: (dirZ/len)*0.55,
+    fromPlayer,
+    life: 60
+  };
+  shooterScene.add(mesh);
+  shooterProjectiles.push(proj);
+}
+
+function shooterFlash(color) {
+  const f = document.createElement('div');
+  f.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:'+color+';opacity:0.4;z-index:49;pointer-events:none;transition:opacity 0.3s';
+  document.body.appendChild(f);
+  setTimeout(()=>{ f.style.opacity='0'; setTimeout(()=>f.remove(),300); },80);
+}
+
+function spawnDeathParticles(pos) {
+  const count = 120;
+  const positions = new Float32Array(count*3);
+  const colors = new Float32Array(count*3);
+  const velocities = [];
+  const colOpts = [[0.96,0.27,0.27],[0.96,0.56,0.14],[0.78,0.38,0.99],[0.37,0.64,0.98]];
+  for (let i=0;i<count;i++) {
+    positions[i*3]=pos.x+(Math.random()-0.5)*0.8;
+    positions[i*3+1]=pos.y+0.5+Math.random()*1;
+    positions[i*3+2]=pos.z+(Math.random()-0.5)*0.8;
+    velocities.push({x:(Math.random()-0.5)*0.25,y:0.06+Math.random()*0.15,z:(Math.random()-0.5)*0.25});
+    const c=colOpts[Math.floor(Math.random()*colOpts.length)];
+    colors[i*3]=c[0]; colors[i*3+1]=c[1]; colors[i*3+2]=c[2];
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
+  const mat = new THREE.PointsMaterial({size:0.38, vertexColors:true, transparent:true, opacity:1});
+  const pts = new THREE.Points(geo, mat);
+  shooterScene.add(pts);
+  shooterParticles.push({points:pts, velocities, mat, life:1.0});
+}
+
+function updateShooterParticles() {
+  for (let i=shooterParticles.length-1; i>=0; i--) {
+    const ps = shooterParticles[i];
+    ps.life -= 0.02;
+    ps.mat.opacity = Math.max(0, ps.life);
+    const pos = ps.points.geometry.attributes.position.array;
+    for (let j=0; j<ps.velocities.length; j++) {
+      const v = ps.velocities[j];
+      pos[j*3]+=v.x; pos[j*3+1]+=v.y; pos[j*3+2]+=v.z;
+      v.y -= 0.004;
+    }
+    ps.points.geometry.attributes.position.needsUpdate = true;
+    if (ps.life <= 0) {
+      shooterScene.remove(ps.points);
+      shooterParticles.splice(i,1);
+    }
+  }
+}
+
+function setShooterHp(hp) {
+  shooterPlayerHp = Math.max(0, Math.min(100, hp));
+  document.getElementById('shooterHpNum').textContent = shooterPlayerHp;
+  const pct = shooterPlayerHp / 100;
+  document.getElementById('shooterHealthBarFill').style.width = (pct*100)+'%';
+  const fillEl = document.getElementById('shooterHealthBarFill');
+  if (pct > 0.5) fillEl.style.background='linear-gradient(90deg,#22c55e,#4ade80)';
+  else if (pct > 0.25) fillEl.style.background='linear-gradient(90deg,#f97316,#fb923c)';
+  else fillEl.style.background='linear-gradient(90deg,#ef4444,#f87171)';
+}
+
+function onShooterKeyDown(e) {
+  shooterKeys[e.code] = true;
+  if (e.code === 'Space' || e.code === 'KeyF' || e.code === 'KeyE') {
+    e.preventDefault();
+    doShooterShoot();
+  }
+}
+function onShooterKeyUp(e) { shooterKeys[e.code] = false; }
+
+function onShooterMouseDown(e) {
+  if (currentScreen !== 'shooter' || shooterDead) return;
+  if (e.button === 0) doShooterShoot();
+}
+
+function doShooterShoot() {
+  if (!shooterRunning || shooterDead) return;
+  const now = Date.now();
+  if (now - shooterLastShot < 350) return;
+  shooterLastShot = now;
+  const dirX = Math.sin(shooterPlayer.rotation.y);
+  const dirZ = Math.cos(shooterPlayer.rotation.y);
+  shootProjectile(shooterPlayer.position, dirX, dirZ, true);
+}
+
+function setupShooterMobileControls() {
+  const area = document.getElementById('shooterJoystickArea');
+  const knob = document.getElementById('shooterJoystickKnob');
+  const shootBtn = document.getElementById('shooterShootBtn');
+  if (!area) return;
+  knob.style.left = '35px'; knob.style.top = '35px';
+  let touchId = null;
+  const cx = 60, cy = 60;
+
+  area.ontouchstart = (e) => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    touchId = t.identifier; shooterJoystickActive = true;
+    updateShooterJoystick(t, area, knob, cx, cy);
+  };
+  area.ontouchmove = (e) => {
+    e.preventDefault();
+    for (let t of e.changedTouches) { if (t.identifier===touchId) updateShooterJoystick(t, area, knob, cx, cy); }
+  };
+  const endJoy = () => { shooterJoystickActive=false; shooterJoystickDX=0; shooterJoystickDZ=0; knob.style.left='35px'; knob.style.top='35px'; touchId=null; };
+  area.ontouchend = endJoy;
+  area.ontouchcancel = endJoy;
+
+  shootBtn.ontouchstart = (e) => { e.preventDefault(); doShooterShoot(); };
+}
+
+function updateShooterJoystick(touch, area, knob, cx, cy) {
+  const rect = area.getBoundingClientRect();
+  let dx = touch.clientX - rect.left - cx;
+  let dy = touch.clientY - rect.top - cy;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  const maxDist = 40;
+  if (dist > maxDist) { dx=dx/dist*maxDist; dy=dy/dist*maxDist; }
+  knob.style.left = (cx-25+dx)+'px';
+  knob.style.top  = (cy-25+dy)+'px';
+  shooterJoystickDX = dx/maxDist;
+  shooterJoystickDZ = dy/maxDist;
+}
+
+function shooterLoop() {
+  if (!shooterRunning) return;
+  shooterAnimId = requestAnimationFrame(shooterLoop);
+  const now = Date.now();
+  const t = now * 0.001;
+  const A = SHOOTER_ARENA_SIZE;
+
+  if (shooterDead) {
+    renderer.render(shooterScene, shooterCamera);
+    return;
+  }
+
+  // Player movement
+  const speed = 0.13;
+  let moveX = 0, moveZ = 0;
+  if (shooterKeys['KeyW']||shooterKeys['ArrowUp'])    moveZ -= speed;
+  if (shooterKeys['KeyS']||shooterKeys['ArrowDown'])  moveZ += speed;
+  if (shooterKeys['KeyA']||shooterKeys['ArrowLeft'])  moveX -= speed;
+  if (shooterKeys['KeyD']||shooterKeys['ArrowRight']) moveX += speed;
+  if (shooterJoystickActive) { moveX += shooterJoystickDX*speed; moveZ += shooterJoystickDZ*speed; }
+
+  shooterPlayer.position.x += moveX;
+  shooterPlayer.position.z += moveZ;
+
+  if (Math.abs(moveX)>0.001 || Math.abs(moveZ)>0.001) {
+    shooterPlayer.rotation.y = Math.atan2(moveX, moveZ);
+  }
+
+  // Clamp to arena
+  shooterPlayer.position.x = Math.max(-(A-1.2), Math.min(A-1.2, shooterPlayer.position.x));
+  shooterPlayer.position.z = Math.max(-(A-1.2), Math.min(A-1.2, shooterPlayer.position.z));
+  shooterPlayer.position.y = 0.8 + Math.sin(t*2.5)*0.04;
+
+  // Camera follow
+  const camTarget = shooterPlayer.position.clone().add(new THREE.Vector3(0, 6, 10));
+  shooterCamera.position.lerp(camTarget, 0.06);
+  shooterCamera.lookAt(shooterPlayer.position.x, shooterPlayer.position.y+1, shooterPlayer.position.z);
+
+  // Update projectiles
+  for (let i=shooterProjectiles.length-1; i>=0; i--) {
+    const p = shooterProjectiles[i];
+    p.mesh.position.x += p.vx;
+    p.mesh.position.z += p.vz;
+    p.mesh.rotation.y += 0.2;
+    p.life--;
+
+    if (p.life <= 0 || Math.abs(p.mesh.position.x)>A || Math.abs(p.mesh.position.z)>A) {
+      shooterScene.remove(p.mesh);
+      shooterProjectiles.splice(i,1);
+      continue;
+    }
+
+    if (p.fromPlayer) {
+      // Check hit on bots
+      for (let b of shooterEnemyBots) {
+        if (b.dead) continue;
+        if (p.mesh.position.distanceTo(b.mesh.position) < 1.2) {
+          shooterScene.remove(p.mesh);
+          shooterProjectiles.splice(i,1);
+          b.hp -= SHOOTER_PROJECTILE_DAMAGE;
+          updateBotHealthBar(b);
+          if (b.hp <= 0) {
+            killShooterBot(b);
+          }
+          break;
+        }
+      }
+    } else {
+      // Check hit on player
+      if (p.mesh.position.distanceTo(shooterPlayer.position) < 1.0) {
+        shooterScene.remove(p.mesh);
+        shooterProjectiles.splice(i,1);
+        setShooterHp(shooterPlayerHp - SHOOTER_PROJECTILE_DAMAGE);
+        shooterFlash('#ef4444');
+        if (shooterPlayerHp <= 0) {
+          playerDied();
+        }
+      }
+    }
+  }
+
+  // Update bots
+  for (let b of shooterEnemyBots) {
+    if (b.dead) {
+      b.respawnTimer -= 16;
+      if (b.respawnTimer <= 0) {
+        respawnShooterBot(b);
+      }
+      continue;
+    }
+
+    // Move toward target or player
+    const px = shooterPlayer.position.x;
+    const pz = shooterPlayer.position.z;
+    const distToPlayer = Math.sqrt((b.mesh.position.x-px)**2 + (b.mesh.position.z-pz)**2);
+
+    // If close, take cover behind nearest crate (simplified: just move perpendicular)
+    let tx, tz;
+    if (distToPlayer < 8) {
+      // Strafe: move sideways relative to player direction
+      const ang = Math.atan2(b.mesh.position.z - pz, b.mesh.position.x - px) + Math.PI/2;
+      tx = b.mesh.position.x + Math.cos(ang)*6;
+      tz = b.mesh.position.z + Math.sin(ang)*6;
+    } else {
+      tx = b.targetX;
+      tz = b.targetZ;
+    }
+
+    const dx = tx - b.mesh.position.x;
+    const dz = tz - b.mesh.position.z;
+    const d = Math.sqrt(dx*dx+dz*dz);
+    if (d < 1.5) {
+      b.targetX = (Math.random()-0.5)*(A*1.5);
+      b.targetZ = (Math.random()-0.5)*(A*1.5);
+    } else {
+      b.mesh.position.x += (dx/d)*b.speed;
+      b.mesh.position.z += (dz/d)*b.speed;
+      b.mesh.rotation.y = Math.atan2(dx, dz);
+    }
+
+    b.mesh.position.x = Math.max(-(A-1.5), Math.min(A-1.5, b.mesh.position.x));
+    b.mesh.position.z = Math.max(-(A-1.5), Math.min(A-1.5, b.mesh.position.z));
+    b.mesh.position.y = 0.8 + Math.sin(t*2.2 + b.phase)*0.04;
+
+    // Bot shoots at player
+    if (now - b.lastShot > b.shotInterval) {
+      b.lastShot = now;
+      b.shotInterval = 2000 + Math.random()*1000;
+      const sdx = px - b.mesh.position.x;
+      const sdz = pz - b.mesh.position.z;
+      // Only shoot if reasonably facing player
+      if (distToPlayer < 22) {
+        shootProjectile(b.mesh.position, sdx, sdz, false);
+      }
+    }
+  }
+
+  updateShooterParticles();
+  renderer.render(shooterScene, shooterCamera);
+}
+
+function killShooterBot(bot) {
+  spawnDeathParticles(bot.mesh.position);
+  bot.mesh.visible = false;
+  bot.dead = true;
+  bot.respawnTimer = 5000;
+  shooterKillCount++;
+  document.getElementById('shooterKills').textContent = shooterKillCount;
+  setBiomes(getBiomes()+100);
+  updateAllBiomes();
+  toast('+100 💎 Bot eliminated! 💥','#f97316');
+}
+
+function respawnShooterBot(bot) {
+  bot.hp = 100;
+  bot.dead = false;
+  const angle = Math.random()*Math.PI*2;
+  const dist = 15 + Math.random()*8;
+  bot.mesh.position.set(Math.cos(angle)*dist, 0.8, Math.sin(angle)*dist);
+  bot.mesh.visible = true;
+  bot.lastShot = Date.now() + 1000;
+  updateBotHealthBar(bot);
+}
+
+function playerDied() {
+  shooterDead = true;
+  document.getElementById('shooterDeathKills').textContent = shooterKillCount;
+  document.getElementById('shooterDeathOverlay').style.display = 'flex';
+}
+
+function stopShooter() {
+  shooterRunning = false;
+  shooterDead = false;
+  if (shooterAnimId) cancelAnimationFrame(shooterAnimId);
+  document.removeEventListener('keydown', onShooterKeyDown);
+  document.removeEventListener('keyup', onShooterKeyUp);
+  document.removeEventListener('mousedown', onShooterMouseDown);
+  shooterKeys = {};
+  shooterEnemyBots = [];
+  shooterProjectiles = [];
+  shooterParticles = [];
+  shooterJoystickActive = false;
+  shooterJoystickDX = 0;
+  shooterJoystickDZ = 0;
+  document.getElementById('shooterHud').style.display = 'none';
+  document.getElementById('shooterHealthBar').style.display = 'none';
+  document.getElementById('crosshair').style.display = 'none';
+  document.getElementById('shooterDeathOverlay').style.display = 'none';
+}
+
+function exitShooter() {
+  stopShooter();
+  showScreen('lobby');
+}
+
+function restartShooter() {
+  stopShooter();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('shooterScreen');
+  if (el) el.classList.add('active');
+  currentScreen = 'shooter';
+  startShooter();
+}
+
+// ============================================
 // RESIZE HANDLER
 // ============================================
 window.addEventListener('resize', () => {
@@ -2000,6 +2659,7 @@ window.addEventListener('resize', () => {
   if (bgCamera) { bgCamera.aspect = w/h; bgCamera.updateProjectionMatrix(); }
   if (gameCamera) { gameCamera.aspect = w/h; gameCamera.updateProjectionMatrix(); }
   if (obbyCamera) { obbyCamera.aspect = w/h; obbyCamera.updateProjectionMatrix(); }
+  if (shooterCamera) { shooterCamera.aspect = w/h; shooterCamera.updateProjectionMatrix(); }
 });
 
 // ============================================

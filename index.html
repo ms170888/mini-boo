@@ -374,6 +374,57 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
   align-items:center; justify-content:center;
 }
 
+/* Hide and Seek portal */
+.portal-has { background:linear-gradient(135deg,#a855f7,#6366f1); border-color:#c4b5fd; }
+
+/* HaS HUD */
+#hasHud {
+  position:fixed; top:15px; right:20px; z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #a855f7; border-radius:14px; padding:10px 18px;
+  font-size:16px; display:none;
+}
+
+/* HaS status bar */
+#hasStatusBar {
+  position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #a855f7; border-radius:14px; padding:8px 18px;
+  font-size:15px; display:none; text-align:center;
+}
+
+/* HaS mobile controls */
+#hasMobileControls { display:none; position:fixed; bottom:0; left:0; width:100%; height:200px; z-index:16; pointer-events:none; }
+#hasJoystickArea {
+  position:absolute; bottom:30px; left:30px; width:120px; height:120px;
+  border-radius:50%; background:rgba(168,85,247,.2); border:3px solid rgba(168,85,247,.4);
+  pointer-events:auto; touch-action:none;
+}
+#hasJoystickKnob {
+  position:absolute; width:50px; height:50px; border-radius:50%;
+  background:rgba(196,181,253,.6); top:35px; left:35px; pointer-events:none;
+}
+@media (pointer:coarse) { #hasMobileControls { display:block; } }
+
+/* HaS found overlay */
+#hasFoundOverlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  z-index:50; background:rgba(0,0,0,.82); flex-direction:column;
+  align-items:center; justify-content:center;
+}
+
+/* HaS win overlay */
+#hasWinOverlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  z-index:50; background:rgba(16,185,129,.15); flex-direction:column;
+  align-items:center; justify-content:center; backdrop-filter:blur(3px);
+}
+
+/* HaS danger indicator */
+#hasDanger {
+  position:fixed; bottom:220px; left:50%; transform:translateX(-50%); z-index:16;
+  font-size:14px; padding:6px 16px; border-radius:10px; display:none;
+  background:rgba(20,5,50,.85); border:2px solid #a855f7;
+}
+
 @media (max-width:500px) {
   .portal-grid { grid-template-columns:1fr 1fr; gap:10px; padding:12px; max-width:100%; }
   .portal-btn { padding:16px 10px; font-size:14px; }
@@ -423,6 +474,7 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
     <div class="portal-btn portal-obby" onclick="showScreen('obby')"><span class="emoji">🏃</span>Obby Course</div>
     <div class="portal-btn portal-shooter" onclick="showScreen('shooter')"><span class="emoji">🔫</span>Shooter Arena</div>
     <div class="portal-btn portal-ctf" onclick="showScreen('ctf')"><span class="emoji">🏁</span>Capture Flag</div>
+    <div class="portal-btn portal-has" onclick="showScreen('has')"><span class="emoji">👀</span>Hide & Seek</div>
   </div>
   <div id="chatBox">
     <div class="chat-msg"><span class="chat-npc">🤖 Boo Bot:</span> Welcome to Mini Boo! Pick a door!</div>
@@ -602,6 +654,50 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
   </div>
 </div>
 
+<!-- SCREEN 10: Hide and Seek -->
+<div id="hasScreen" class="screen">
+  <button class="btn btn-purple btn-sm btn-back" onclick="exitHaS()">← Lobby</button>
+  <div id="hasHud">
+    <div>👻 <span id="hasUser">Player</span></div>
+    <div class="biomes-display">💎 <span id="hasBiomesDisplay">100</span></div>
+    <div style="color:#a855f7">👀 Level: <span id="hasLevel">1</span></div>
+    <div style="color:#fbbf24">⏱️ <span id="hasTimer">0:00</span></div>
+  </div>
+  <div id="hasStatusBar">🙈 Find a hiding spot! Seeker starts in 5 seconds...</div>
+  <div id="hasDanger">🔍 Seeker is close!</div>
+  <div id="hasMobileControls">
+    <div id="hasJoystickArea"><div id="hasJoystickKnob"></div></div>
+  </div>
+</div>
+
+<!-- HaS Found Overlay -->
+<div id="hasFoundOverlay">
+  <div class="panel" style="text-align:center;max-width:380px;">
+    <div style="font-size:64px;margin-bottom:8px">👁️</div>
+    <h2 style="color:#ef4444;font-size:36px;margin-bottom:10px">FOUND YOU!</h2>
+    <p style="color:#a78bfa;font-size:16px;margin-bottom:6px">You survived <span id="hasTimeAlive" style="color:#fbbf24">0:00</span></p>
+    <p style="color:#a78bfa;font-size:14px;margin-bottom:20px">Level <span id="hasDeathLevel" style="color:#c084fc">1</span></p>
+    <div>
+      <button class="btn btn-purple" onclick="exitHaS()">← Lobby</button>
+      <button class="btn btn-green" onclick="retryHaS()" style="margin-left:8px">🔄 Try Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- HaS Win Overlay -->
+<div id="hasWinOverlay">
+  <div class="panel" style="text-align:center;max-width:380px;">
+    <div style="font-size:64px;margin-bottom:8px">🏆</div>
+    <h2 style="color:#10b981;font-size:36px;margin-bottom:10px">YOU SURVIVED!</h2>
+    <p style="color:#fbbf24;font-size:18px;margin-bottom:6px">+<span id="hasReward">150</span> 💎</p>
+    <p style="color:#a78bfa;font-size:14px;margin-bottom:20px">Hidden for the full time!</p>
+    <div>
+      <button class="btn btn-purple" onclick="exitHaS()">← Lobby</button>
+      <button class="btn btn-green" onclick="nextHaSLevel()" style="margin-left:8px">▶ Next Level</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================
 // GLOBAL STATE
@@ -646,6 +742,19 @@ let ctfEnemies = [], ctfLevel = 1;
 let ctfFlag, ctfFlagBase, ctfHomeBase;
 let ctfHasFlag = false, ctfTimerStart = 0;
 const CTF_ARENA = 40;
+
+// Hide and Seek state
+let hasRunning = false, hasFound = false, hasWon = false;
+let hasScene, hasCamera, hasPlayer, hasPlayerMesh;
+let hasKeys = {}, hasAnimId;
+let hasJoystickActive = false, hasJoystickDX = 0, hasJoystickDZ = 0;
+let hasSeeker, hasSeekerMesh;
+let hasLevel = 1, hasTimerStart = 0;
+let hasSeekerActive = false, hasSeekerStartTime = 0;
+let hasHidingSpots = [];
+const HAS_ARENA = 35;
+const HAS_HIDE_TIME = 5000; // 5 seconds to hide
+const HAS_SURVIVE_BASE = 45; // seconds to survive level 1
 
 let editorGrid = [];
 const EDITOR_COLS = 20, EDITOR_ROWS = 15;
@@ -738,6 +847,8 @@ function updateAllBiomes() {
   if (sbd) sbd.textContent = b;
   const cbd = document.getElementById('ctfBiomesDisplay');
   if (cbd) cbd.textContent = b;
+  const hbd = document.getElementById('hasBiomesDisplay');
+  if (hbd) hbd.textContent = b;
 }
 
 // ============================================
@@ -794,11 +905,13 @@ function showScreen(name) {
   if (name === 'obby') startObby();
   if (name === 'shooter') startShooter();
   if (name === 'ctf') startCTF();
+  if (name === 'has') startHaS();
 
   if (name !== 'game' && gameRunning) stopGame();
   if (name !== 'obby' && obbyRunning) stopObby();
   if (name !== 'shooter' && shooterRunning) stopShooter();
   if (name !== 'ctf' && ctfRunning) stopCTF();
+  if (name !== 'has' && hasRunning) stopHaS();
 }
 
 // ============================================
@@ -3227,6 +3340,462 @@ function nextCTFLevel() {
 }
 
 // ============================================
+// HIDE AND SEEK GAME
+// ============================================
+
+function startHaS() {
+  hasRunning = true;
+  hasFound = false;
+  hasWon = false;
+  hasSeekerActive = false;
+  hasKeys = {};
+  hasJoystickActive = false;
+  hasJoystickDX = 0;
+  hasJoystickDZ = 0;
+  hasTimerStart = Date.now();
+  hasSeekerStartTime = Date.now() + HAS_HIDE_TIME;
+  hasHidingSpots = [];
+
+  document.getElementById('hasUser').textContent = currentUser || 'Player';
+  document.getElementById('hasLevel').textContent = hasLevel;
+  document.getElementById('hasTimer').textContent = '0:00';
+  document.getElementById('hasHud').style.display = 'block';
+  document.getElementById('hasStatusBar').style.display = 'block';
+  document.getElementById('hasStatusBar').textContent = '🙈 Find a hiding spot! Seeker starts in 5 seconds...';
+  document.getElementById('hasStatusBar').style.borderColor = '#fbbf24';
+  document.getElementById('hasDanger').style.display = 'none';
+  document.getElementById('hasFoundOverlay').style.display = 'none';
+  document.getElementById('hasWinOverlay').style.display = 'none';
+  updateAllBiomes();
+
+  // Scene
+  hasScene = new THREE.Scene();
+  hasScene.background = new THREE.Color(0x0a0520);
+  hasScene.fog = new THREE.Fog(0x0a0520, 20, 55);
+
+  hasCamera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 200);
+
+  hasScene.add(new THREE.AmbientLight(0x3030a0, 0.5));
+  const moon = new THREE.DirectionalLight(0x9088cc, 0.4);
+  moon.position.set(-5, 15, 5);
+  hasScene.add(moon);
+
+  // Stars
+  const sg = new THREE.BufferGeometry();
+  const sv = [];
+  for (let i = 0; i < 400; i++) sv.push((Math.random()-0.5)*100, Math.random()*30+5, (Math.random()-0.5)*100);
+  sg.setAttribute('position', new THREE.Float32BufferAttribute(sv, 3));
+  hasScene.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff, size:0.12})));
+
+  buildHaSArena();
+
+  // Player
+  const av = getAvatar();
+  hasPlayerMesh = createGhostMesh(av);
+  hasPlayerMesh.position.set(0, 0.8, HAS_ARENA/2 - 4);
+  hasScene.add(hasPlayerMesh);
+  hasPlayer = hasPlayerMesh;
+
+  // Seeker ghost (starts frozen at center)
+  const seekerColor = '#ef4444';
+  hasSeekerMesh = createGhostMesh({color:seekerColor, eyes:'angry', hat:'none', acc:'none'});
+  hasSeekerMesh.position.set(0, 0.8, 0);
+  hasSeekerMesh.scale.set(1.3, 1.3, 1.3);
+  hasScene.add(hasSeekerMesh);
+  hasSeeker = {
+    mesh: hasSeekerMesh,
+    speed: 0.06 + hasLevel * 0.015,
+    searchRadius: 4 + hasLevel * 0.8,
+    targetX: 0, targetZ: 0,
+    patrolTimer: 0,
+    investigating: false,
+    lastKnownX: 0, lastKnownZ: 0,
+    searchPhase: 'patrol' // patrol, investigate, chase
+  };
+
+  // Seeker eye glow
+  const eyeGlow = new THREE.PointLight(0xff0000, 1, 6);
+  eyeGlow.position.set(0, 1.5, 0);
+  hasSeekerMesh.add(eyeGlow);
+
+  document.addEventListener('keydown', onHaSKeyDown);
+  document.addEventListener('keyup', onHaSKeyUp);
+  setupHaSMobileControls();
+
+  hasLoop();
+}
+
+function buildHaSArena() {
+  const A = HAS_ARENA;
+
+  // Floor (dark, spooky)
+  const floorGeo = new THREE.PlaneGeometry(A*2, A*2);
+  const floorMat = new THREE.MeshStandardMaterial({color:0x100820, roughness:0.95});
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI/2;
+  hasScene.add(floor);
+
+  // Subtle grid
+  const grid = new THREE.GridHelper(A*2, 30, 0x150a30, 0x150a30);
+  grid.position.y = 0.01;
+  hasScene.add(grid);
+
+  // Walls
+  const wallMat = new THREE.MeshStandardMaterial({color:0x1a0a40, roughness:0.8});
+  const wallH = 4;
+  [{w:A*2,d:0.5,x:0,z:-A},{w:A*2,d:0.5,x:0,z:A},{w:0.5,d:A*2,x:-A,z:0},{w:0.5,d:A*2,x:A,z:0}].forEach(w => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w.w, wallH, w.d), wallMat);
+    m.position.set(w.x, wallH/2, w.z);
+    hasScene.add(m);
+  });
+
+  // Hiding spots: big crates, walls, pillars scattered around
+  const crateMat = new THREE.MeshStandardMaterial({color:0x2a1560, roughness:0.7});
+  const hidingObstacles = [
+    // Large crate clusters (good hiding spots)
+    {x:-12, z:-8, w:3, h:3, d:3},
+    {x:10, z:-12, w:4, h:2.5, d:2},
+    {x:-8, z:6, w:2, h:3, d:4},
+    {x:14, z:4, w:3, h:3.5, d:2},
+    {x:0, z:-6, w:5, h:2, d:1.5},
+    {x:-5, z:12, w:2, h:3, d:3},
+    {x:8, z:10, w:3, h:2.5, d:3},
+    // L-shaped walls
+    {x:-14, z:0, w:1.5, h:3, d:8},
+    {x:-10, z:-4, w:8, h:3, d:1},
+    {x:12, z:-2, w:1.5, h:3, d:6},
+    {x:6, z:-5, w:6, h:3, d:1},
+    // Small pillars
+    {x:-3, z:-14, w:2, h:4, d:2},
+    {x:5, z:-10, w:2, h:4, d:2},
+    {x:-10, z:10, w:2, h:3.5, d:2},
+    {x:0, z:8, w:1.5, h:3, d:5},
+    // Extra cover
+    {x:6, z:14, w:4, h:2, d:1.5},
+    {x:-6, z:-10, w:1, h:3, d:4},
+    {x:14, z:12, w:2.5, h:3, d:2.5},
+    {x:-14, z:-12, w:3, h:3, d:2},
+  ];
+
+  hidingObstacles.forEach(o => {
+    const geo = new THREE.BoxGeometry(o.w, o.h, o.d);
+    const mesh = new THREE.Mesh(geo, crateMat);
+    mesh.position.set(o.x, o.h/2, o.z);
+    mesh.userData.isObstacle = true;
+    mesh.userData.hw = o.w/2;
+    mesh.userData.hd = o.d/2;
+    hasScene.add(mesh);
+
+    // Add dim lights near some hiding spots for atmosphere
+    if (Math.random() > 0.6) {
+      const spotLight = new THREE.PointLight(0x6d28d9, 0.3, 5);
+      spotLight.position.set(o.x, o.h + 1, o.z);
+      hasScene.add(spotLight);
+    }
+
+    hasHidingSpots.push({x:o.x, z:o.z, hw:o.w/2, hd:o.d/2});
+  });
+}
+
+function onHaSKeyDown(e) { hasKeys[e.code] = true; }
+function onHaSKeyUp(e) { hasKeys[e.code] = false; }
+
+function setupHaSMobileControls() {
+  const area = document.getElementById('hasJoystickArea');
+  const knob = document.getElementById('hasJoystickKnob');
+  if (!area || !knob) return;
+
+  let touchId = null, cx, cy;
+  area.ontouchstart = (e) => {
+    e.preventDefault();
+    const t = e.touches[0];
+    const r = area.getBoundingClientRect();
+    cx = r.left + r.width/2;
+    cy = r.top + r.height/2;
+    touchId = t.identifier;
+    hasJoystickActive = true;
+    updateHaSJoystick(t, area, knob, cx, cy);
+  };
+  area.ontouchmove = (e) => {
+    e.preventDefault();
+    for (let t of e.changedTouches) {
+      if (t.identifier === touchId) updateHaSJoystick(t, area, knob, cx, cy);
+    }
+  };
+  const endJoy = () => { hasJoystickActive=false; hasJoystickDX=0; hasJoystickDZ=0; knob.style.transform='translate(-50%,-50%)'; };
+  area.ontouchend = endJoy;
+  area.ontouchcancel = endJoy;
+}
+
+function updateHaSJoystick(touch, area, knob, cx, cy) {
+  let dx = touch.clientX - cx;
+  let dy = touch.clientY - cy;
+  const maxDist = area.offsetWidth / 2 - knob.offsetWidth / 2;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist > maxDist) { dx = dx/dist*maxDist; dy = dy/dist*maxDist; }
+  knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  hasJoystickDX = dx/maxDist;
+  hasJoystickDZ = dy/maxDist;
+}
+
+// Check if a line of sight between two points is blocked by obstacles
+function hasLineOfSight(ax, az, bx, bz) {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const dist = Math.sqrt(dx*dx + dz*dz);
+  const steps = Math.ceil(dist / 0.5);
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const cx = ax + dx * t;
+    const cz = az + dz * t;
+    for (let spot of hasHidingSpots) {
+      if (Math.abs(cx - spot.x) < spot.hw + 0.3 && Math.abs(cz - spot.z) < spot.hd + 0.3) {
+        return false; // blocked
+      }
+    }
+  }
+  return true; // clear line of sight
+}
+
+function hasLoop() {
+  if (!hasRunning) return;
+  hasAnimId = requestAnimationFrame(hasLoop);
+
+  const now = Date.now();
+  const t = now * 0.001;
+  const A = HAS_ARENA;
+
+  if (hasFound || hasWon) {
+    hasSeekerMesh.position.y = 0.8 + Math.sin(t*2)*0.05;
+    renderer.render(hasScene, hasCamera);
+    return;
+  }
+
+  // Timer
+  const elapsed = Math.floor((now - hasTimerStart) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  document.getElementById('hasTimer').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+  // Check if seeker should activate
+  if (!hasSeekerActive && now >= hasSeekerStartTime) {
+    hasSeekerActive = true;
+    document.getElementById('hasStatusBar').textContent = '😱 The seeker is hunting! Stay hidden!';
+    document.getElementById('hasStatusBar').style.borderColor = '#ef4444';
+    toast('👁️ The seeker is coming!', '#ef4444');
+  }
+
+  // Countdown display during hiding phase
+  if (!hasSeekerActive) {
+    const countdown = Math.ceil((hasSeekerStartTime - now) / 1000);
+    document.getElementById('hasStatusBar').textContent = '🙈 Hide! Seeker starts in ' + countdown + '...';
+  }
+
+  // Player movement
+  const speed = 0.14;
+  let moveX = 0, moveZ = 0;
+  if (hasKeys['KeyW']||hasKeys['ArrowUp'])    moveZ -= speed;
+  if (hasKeys['KeyS']||hasKeys['ArrowDown'])  moveZ += speed;
+  if (hasKeys['KeyA']||hasKeys['ArrowLeft'])  moveX -= speed;
+  if (hasKeys['KeyD']||hasKeys['ArrowRight']) moveX += speed;
+  if (hasJoystickActive) { moveX += hasJoystickDX*speed; moveZ += hasJoystickDZ*speed; }
+
+  // Simple obstacle collision for player
+  let newX = hasPlayer.position.x + moveX;
+  let newZ = hasPlayer.position.z + moveZ;
+  for (let spot of hasHidingSpots) {
+    if (Math.abs(newX - spot.x) < spot.hw + 0.5 && Math.abs(newZ - spot.z) < spot.hd + 0.5) {
+      // Push out
+      if (Math.abs(moveX) > 0) newX = hasPlayer.position.x;
+      if (Math.abs(moveZ) > 0) newZ = hasPlayer.position.z;
+    }
+  }
+  hasPlayer.position.x = newX;
+  hasPlayer.position.z = newZ;
+
+  if (moveX !== 0 || moveZ !== 0) {
+    hasPlayer.rotation.y = Math.atan2(moveX, moveZ);
+  }
+
+  // Arena bounds
+  hasPlayer.position.x = Math.max(-(A-1.5), Math.min(A-1.5, hasPlayer.position.x));
+  hasPlayer.position.z = Math.max(-(A-1.5), Math.min(A-1.5, hasPlayer.position.z));
+  hasPlayer.position.y = 0.8 + Math.sin(t*2.5)*0.03;
+
+  // Camera
+  const camTarget = new THREE.Vector3(hasPlayer.position.x, hasPlayer.position.y + 9, hasPlayer.position.z + 11);
+  hasCamera.position.lerp(camTarget, 0.06);
+  hasCamera.lookAt(hasPlayer.position.x, hasPlayer.position.y + 1, hasPlayer.position.z);
+
+  // Seeker AI
+  if (hasSeekerActive) {
+    const sk = hasSeeker;
+    const sx = sk.mesh.position.x;
+    const sz = sk.mesh.position.z;
+    const px = hasPlayer.position.x;
+    const pz = hasPlayer.position.z;
+    const distToPlayer = Math.sqrt((px-sx)*(px-sx) + (pz-sz)*(pz-sz));
+
+    // Can seeker see the player? (within range AND line of sight)
+    const canSee = distToPlayer < sk.searchRadius && hasLineOfSight(sx, sz, px, pz);
+
+    if (canSee) {
+      // CHASE mode
+      sk.searchPhase = 'chase';
+      sk.lastKnownX = px;
+      sk.lastKnownZ = pz;
+      const dx = px - sx;
+      const dz = pz - sz;
+      const d = Math.sqrt(dx*dx + dz*dz);
+      const chaseSpeed = sk.speed * 1.5;
+      sk.mesh.position.x += (dx/d) * chaseSpeed;
+      sk.mesh.position.z += (dz/d) * chaseSpeed;
+      sk.mesh.rotation.y = Math.atan2(dx, dz);
+    } else if (sk.searchPhase === 'chase') {
+      // Lost sight, investigate last known position
+      sk.searchPhase = 'investigate';
+      sk.targetX = sk.lastKnownX + (Math.random()-0.5)*6;
+      sk.targetZ = sk.lastKnownZ + (Math.random()-0.5)*6;
+      sk.patrolTimer = 0;
+    } else if (sk.searchPhase === 'investigate') {
+      // Move toward last known area
+      const dx = sk.targetX - sx;
+      const dz = sk.targetZ - sz;
+      const d = Math.sqrt(dx*dx + dz*dz);
+      if (d < 1.5 || sk.patrolTimer > 180) {
+        sk.searchPhase = 'patrol';
+        sk.patrolTimer = 0;
+      } else {
+        sk.mesh.position.x += (dx/d) * sk.speed;
+        sk.mesh.position.z += (dz/d) * sk.speed;
+        sk.mesh.rotation.y = Math.atan2(dx, dz);
+      }
+      sk.patrolTimer++;
+    } else {
+      // PATROL: wander around checking hiding spots
+      sk.patrolTimer++;
+      const dx = sk.targetX - sx;
+      const dz = sk.targetZ - sz;
+      const d = Math.sqrt(dx*dx + dz*dz);
+      if (d < 2 || sk.patrolTimer > 250) {
+        // Pick a new target: sometimes a random hiding spot, sometimes random area
+        if (Math.random() > 0.4 && hasHidingSpots.length > 0) {
+          const spot = hasHidingSpots[Math.floor(Math.random() * hasHidingSpots.length)];
+          sk.targetX = spot.x + (Math.random()-0.5)*4;
+          sk.targetZ = spot.z + (Math.random()-0.5)*4;
+        } else {
+          sk.targetX = (Math.random()-0.5) * (A*1.5);
+          sk.targetZ = (Math.random()-0.5) * (A*1.5);
+        }
+        sk.patrolTimer = 0;
+      } else {
+        sk.mesh.position.x += (dx/d) * sk.speed * 0.7;
+        sk.mesh.position.z += (dz/d) * sk.speed * 0.7;
+        sk.mesh.rotation.y = Math.atan2(dx, dz);
+      }
+    }
+
+    // Seeker bounce
+    sk.mesh.position.y = 0.8 + Math.sin(t*3)*0.06;
+
+    // Seeker arena bounds
+    sk.mesh.position.x = Math.max(-(A-1.5), Math.min(A-1.5, sk.mesh.position.x));
+    sk.mesh.position.z = Math.max(-(A-1.5), Math.min(A-1.5, sk.mesh.position.z));
+
+    // Danger indicator
+    const dangerEl = document.getElementById('hasDanger');
+    if (distToPlayer < sk.searchRadius * 1.5) {
+      dangerEl.style.display = 'block';
+      if (distToPlayer < sk.searchRadius * 0.7) {
+        dangerEl.textContent = '🚨 VERY CLOSE!';
+        dangerEl.style.borderColor = '#ef4444';
+        dangerEl.style.color = '#ef4444';
+      } else {
+        dangerEl.textContent = '🔍 Seeker is nearby...';
+        dangerEl.style.borderColor = '#fbbf24';
+        dangerEl.style.color = '#fbbf24';
+      }
+    } else {
+      dangerEl.style.display = 'none';
+    }
+
+    // CAUGHT: seeker touches player
+    if (distToPlayer < 1.3) {
+      hasFound = true;
+      document.getElementById('hasTimeAlive').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+      document.getElementById('hasDeathLevel').textContent = hasLevel;
+      document.getElementById('hasFoundOverlay').style.display = 'flex';
+      document.getElementById('hasDanger').style.display = 'none';
+      toast('👁️ The seeker found you!', '#ef4444');
+      return;
+    }
+
+    // WIN: survived long enough
+    const surviveTime = HAS_SURVIVE_BASE + (hasLevel - 1) * 10;
+    const seekerElapsed = Math.floor((now - hasSeekerStartTime) / 1000);
+    if (seekerElapsed >= surviveTime) {
+      hasWon = true;
+      const reward = 150 + hasLevel * 25;
+      const currentBiomes = getBiomes();
+      setBiomes(currentBiomes + reward);
+      document.getElementById('hasReward').textContent = reward;
+      document.getElementById('hasWinOverlay').style.display = 'flex';
+      document.getElementById('hasDanger').style.display = 'none';
+      toast('🏆 You survived Level ' + hasLevel + '! +' + reward + ' 💎', '#10b981');
+      return;
+    }
+
+    // Show remaining time in status bar
+    const remaining = surviveTime - seekerElapsed;
+    document.getElementById('hasStatusBar').textContent = '😱 Survive! ' + remaining + 's left...';
+  }
+
+  renderer.render(hasScene, hasCamera);
+}
+
+function stopHaS() {
+  hasRunning = false;
+  hasFound = false;
+  hasWon = false;
+  if (hasAnimId) cancelAnimationFrame(hasAnimId);
+  document.removeEventListener('keydown', onHaSKeyDown);
+  document.removeEventListener('keyup', onHaSKeyUp);
+  hasKeys = {};
+  hasJoystickActive = false;
+  hasJoystickDX = 0;
+  hasJoystickDZ = 0;
+  document.getElementById('hasHud').style.display = 'none';
+  document.getElementById('hasStatusBar').style.display = 'none';
+  document.getElementById('hasDanger').style.display = 'none';
+  document.getElementById('hasFoundOverlay').style.display = 'none';
+  document.getElementById('hasWinOverlay').style.display = 'none';
+}
+
+function exitHaS() {
+  stopHaS();
+  showScreen('lobby');
+}
+
+function retryHaS() {
+  stopHaS();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('hasScreen');
+  if (el) el.classList.add('active');
+  currentScreen = 'has';
+  startHaS();
+}
+
+function nextHaSLevel() {
+  hasLevel++;
+  stopHaS();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('hasScreen');
+  if (el) el.classList.add('active');
+  currentScreen = 'has';
+  startHaS();
+}
+
+// ============================================
 // RESIZE HANDLER
 // ============================================
 window.addEventListener('resize', () => {
@@ -3237,6 +3806,7 @@ window.addEventListener('resize', () => {
   if (obbyCamera) { obbyCamera.aspect = w/h; obbyCamera.updateProjectionMatrix(); }
   if (shooterCamera) { shooterCamera.aspect = w/h; shooterCamera.updateProjectionMatrix(); }
   if (ctfCamera) { ctfCamera.aspect = w/h; ctfCamera.updateProjectionMatrix(); }
+  if (hasCamera) { hasCamera.aspect = w/h; hasCamera.updateProjectionMatrix(); }
 });
 
 // ============================================

@@ -280,10 +280,97 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
 }
 @media (pointer:coarse) { #shooterMobileControls { display:block; } }
 
+/* CTF portal */
+.portal-ctf { background:linear-gradient(135deg,#3b82f6,#10b981); border-color:#93c5fd; }
+
+/* CTF HUD */
+#ctfHud {
+  position:fixed; top:15px; right:20px; z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #3b82f6; border-radius:14px; padding:10px 18px;
+  font-size:16px; display:none;
+}
+
+/* CTF status bar */
+#ctfStatusBar {
+  position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #10b981; border-radius:14px; padding:8px 18px;
+  font-size:15px; display:none; text-align:center;
+}
+
+/* CTF mobile controls */
+#ctfMobileControls { display:none; position:fixed; bottom:0; left:0; width:100%; height:200px; z-index:16; pointer-events:none; }
+#ctfJoystickArea {
+  position:absolute; bottom:30px; left:30px; width:130px; height:130px;
+  background:rgba(59,130,246,.15); border:2px solid rgba(59,130,246,.4); border-radius:50%;
+  pointer-events:auto; touch-action:none;
+}
+#ctfJoystickKnob {
+  width:50px; height:50px; background:rgba(59,130,246,.5); border:2px solid #60a5fa;
+  border-radius:50%; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); transition:none;
+}
+@media (pointer:coarse) { #ctfMobileControls { display:block; } }
+
+/* CTF death overlay */
+#ctfDeathOverlay {
+  position:fixed; top:0; left:0; width:100%; height:100%; z-index:20;
+  background:rgba(220,38,38,.25); display:none; align-items:center; justify-content:center;
+  backdrop-filter:blur(4px);
+}
+
+/* CTF win overlay */
+#ctfWinOverlay {
+  position:fixed; top:0; left:0; width:100%; height:100%; z-index:20;
+  background:rgba(16,185,129,.2); display:none; align-items:center; justify-content:center;
+  backdrop-filter:blur(4px);
+}
+
 /* Shooter death overlay */
 #shooterDeathOverlay {
   display:none; position:fixed; top:0; left:0; width:100%; height:100%;
   z-index:50; background:rgba(0,0,0,.82); flex-direction:column;
+  align-items:center; justify-content:center;
+}
+
+/* CTF portal */
+.portal-ctf { background:linear-gradient(135deg,#22c55e,#0891b2); border-color:#6ee7b7; }
+
+/* CTF HUD */
+#ctfHud {
+  position:fixed; top:15px; right:20px; z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #7c3aed; border-radius:14px; padding:10px 18px;
+  font-size:16px; display:none;
+}
+#ctfFlagStatus {
+  position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:16;
+  display:none; padding:8px 20px;
+  background:rgba(20,5,50,.9); border:2px solid #7c3aed; border-radius:14px;
+  font-size:15px; text-align:center; white-space:nowrap;
+}
+
+/* CTF mobile controls */
+#ctfMobileControls { display:none; position:fixed; bottom:0; left:0; width:100%; height:200px; z-index:16; pointer-events:none; }
+#ctfJoystickArea {
+  position:absolute; bottom:30px; left:30px; width:120px; height:120px;
+  border-radius:50%; background:rgba(124,58,237,.3); border:3px solid rgba(124,58,237,.5);
+  pointer-events:auto; touch-action:none;
+}
+#ctfJoystickKnob {
+  position:absolute; width:50px; height:50px; border-radius:50%;
+  background:rgba(167,139,250,.7); top:35px; left:35px; pointer-events:none;
+}
+@media (pointer:coarse) { #ctfMobileControls { display:block; } }
+
+/* CTF death overlay */
+#ctfDeathOverlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  z-index:50; background:rgba(0,0,0,.82); flex-direction:column;
+  align-items:center; justify-content:center;
+}
+
+/* CTF level complete overlay */
+#ctfCompleteOverlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  z-index:50; background:rgba(0,0,0,.75); flex-direction:column;
   align-items:center; justify-content:center;
 }
 
@@ -334,7 +421,8 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
     <div class="portal-btn portal-shop" onclick="showScreen('shop')"><span class="emoji">🛒</span>Item Shop</div>
     <div class="portal-btn portal-editor" onclick="showScreen('editor')"><span class="emoji">🔧</span>Level Editor</div>
     <div class="portal-btn portal-obby" onclick="showScreen('obby')"><span class="emoji">🏃</span>Obby Course</div>
-    <div class="portal-btn portal-shooter" onclick="showScreen('shooter')" style="grid-column:1/-1"><span class="emoji">🔫</span>Shooter Arena</div>
+    <div class="portal-btn portal-shooter" onclick="showScreen('shooter')"><span class="emoji">🔫</span>Shooter Arena</div>
+    <div class="portal-btn portal-ctf" onclick="showScreen('ctf')"><span class="emoji">🏁</span>Capture Flag</div>
   </div>
   <div id="chatBox">
     <div class="chat-msg"><span class="chat-npc">🤖 Boo Bot:</span> Welcome to Mini Boo! Pick a door!</div>
@@ -472,6 +560,48 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
   </div>
 </div>
 
+<!-- SCREEN 9: Capture the Flag -->
+<div id="ctfScreen" class="screen">
+  <button class="btn btn-purple btn-sm btn-back" onclick="exitCTF()">← Lobby</button>
+  <div id="ctfHud">
+    <div>👻 <span id="ctfUser">Player</span></div>
+    <div class="biomes-display">💎 <span id="ctfBiomesDisplay">100</span></div>
+    <div style="color:#3b82f6">🏁 Level: <span id="ctfLevel">1</span></div>
+    <div style="color:#fbbf24">⏱️ <span id="ctfTimer">0:00</span></div>
+  </div>
+  <div id="ctfStatusBar">🏁 Grab the enemy flag and bring it home!</div>
+  <div id="ctfMobileControls">
+    <div id="ctfJoystickArea"><div id="ctfJoystickKnob"></div></div>
+  </div>
+</div>
+
+<!-- CTF Death Overlay -->
+<div id="ctfDeathOverlay">
+  <div class="panel" style="text-align:center;max-width:380px;">
+    <div style="font-size:64px;margin-bottom:8px">💀</div>
+    <h2 style="color:#ef4444;font-size:40px;margin-bottom:10px">CAUGHT!</h2>
+    <p style="color:#a78bfa;font-size:16px;margin-bottom:20px">An enemy ghost got you!</p>
+    <div>
+      <button class="btn btn-purple" onclick="exitCTF()">← Lobby</button>
+      <button class="btn btn-green" onclick="retryCTF()" style="margin-left:8px">🔄 Try Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- CTF Win Overlay -->
+<div id="ctfWinOverlay">
+  <div class="panel" style="text-align:center;max-width:380px;">
+    <div style="font-size:64px;margin-bottom:8px">🏆</div>
+    <h2 style="color:#10b981;font-size:36px;margin-bottom:10px">FLAG CAPTURED!</h2>
+    <p style="color:#fbbf24;font-size:18px;margin-bottom:6px">+<span id="ctfReward">100</span> 💎</p>
+    <p style="color:#a78bfa;font-size:14px;margin-bottom:20px">Time: <span id="ctfWinTime">0:00</span></p>
+    <div>
+      <button class="btn btn-purple" onclick="exitCTF()">← Lobby</button>
+      <button class="btn btn-green" onclick="nextCTFLevel()" style="margin-left:8px">▶ Next Level</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================
 // GLOBAL STATE
@@ -505,6 +635,17 @@ let shooterPlayerHp = 100, shooterKillCount = 0;
 let shooterProjectiles = [], shooterEnemyBots = [];
 let shooterLastShot = 0, shooterFlashTimer = 0;
 let shooterParticles = [];
+
+// CTF state
+let ctfRunning = false, ctfDead = false, ctfWon = false;
+let ctfScene, ctfCamera, ctfPlayer, ctfPlayerMesh;
+let ctfVelocity = {x:0,y:0,z:0};
+let ctfKeys = {}, ctfAnimId;
+let ctfJoystickActive = false, ctfJoystickDX = 0, ctfJoystickDZ = 0;
+let ctfEnemies = [], ctfLevel = 1;
+let ctfFlag, ctfFlagBase, ctfHomeBase;
+let ctfHasFlag = false, ctfTimerStart = 0;
+const CTF_ARENA = 40;
 
 let editorGrid = [];
 const EDITOR_COLS = 20, EDITOR_ROWS = 15;
@@ -595,6 +736,8 @@ function updateAllBiomes() {
   if (obd) obd.textContent = b;
   const sbd = document.getElementById('shooterBiomesDisplay');
   if (sbd) sbd.textContent = b;
+  const cbd = document.getElementById('ctfBiomesDisplay');
+  if (cbd) cbd.textContent = b;
 }
 
 // ============================================
@@ -650,10 +793,12 @@ function showScreen(name) {
   if (name === 'editor') initEditor();
   if (name === 'obby') startObby();
   if (name === 'shooter') startShooter();
+  if (name === 'ctf') startCTF();
 
   if (name !== 'game' && gameRunning) stopGame();
   if (name !== 'obby' && obbyRunning) stopObby();
   if (name !== 'shooter' && shooterRunning) stopShooter();
+  if (name !== 'ctf' && ctfRunning) stopCTF();
 }
 
 // ============================================
@@ -2651,6 +2796,437 @@ function restartShooter() {
 }
 
 // ============================================
+// CAPTURE THE FLAG GAME
+// ============================================
+
+function startCTF() {
+  ctfRunning = true;
+  ctfDead = false;
+  ctfWon = false;
+  ctfHasFlag = false;
+  ctfEnemies = [];
+  ctfKeys = {};
+  ctfJoystickActive = false;
+  ctfJoystickDX = 0;
+  ctfJoystickDZ = 0;
+  ctfTimerStart = Date.now();
+
+  document.getElementById('ctfUser').textContent = currentUser || 'Player';
+  document.getElementById('ctfLevel').textContent = ctfLevel;
+  document.getElementById('ctfTimer').textContent = '0:00';
+  document.getElementById('ctfHud').style.display = 'block';
+  document.getElementById('ctfStatusBar').style.display = 'block';
+  document.getElementById('ctfStatusBar').textContent = '🏁 Grab the enemy flag and bring it home!';
+  document.getElementById('ctfDeathOverlay').style.display = 'none';
+  document.getElementById('ctfWinOverlay').style.display = 'none';
+  updateAllBiomes();
+
+  // Scene setup
+  ctfScene = new THREE.Scene();
+  ctfScene.background = new THREE.Color(0x0a0820);
+  ctfScene.fog = new THREE.Fog(0x0a0820, 30, 70);
+
+  ctfCamera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 200);
+
+  ctfScene.add(new THREE.AmbientLight(0x4040a0, 0.6));
+  const sun = new THREE.DirectionalLight(0xc084fc, 0.7);
+  sun.position.set(10, 20, 10);
+  ctfScene.add(sun);
+
+  // Stars
+  const starGeo = new THREE.BufferGeometry();
+  const starVerts = [];
+  for (let i = 0; i < 500; i++) {
+    starVerts.push((Math.random()-0.5)*120, Math.random()*40+5, (Math.random()-0.5)*120);
+  }
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+  ctfScene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({color:0xffffff, size:0.15})));
+
+  buildCTFArena();
+  buildCTFBases();
+  spawnCTFEnemies();
+
+  // Player
+  const av = getAvatar();
+  ctfPlayerMesh = createGhostMesh(av);
+  ctfPlayerMesh.position.set(0, 0.8, CTF_ARENA/2 - 3);
+  ctfScene.add(ctfPlayerMesh);
+  ctfPlayer = ctfPlayerMesh;
+
+  document.addEventListener('keydown', onCTFKeyDown);
+  document.addEventListener('keyup', onCTFKeyUp);
+  setupCTFMobileControls();
+
+  ctfLoop();
+}
+
+function buildCTFArena() {
+  const A = CTF_ARENA;
+  // Floor
+  const floorGeo = new THREE.PlaneGeometry(A*2, A*2);
+  const floorMat = new THREE.MeshStandardMaterial({color:0x151030, roughness:0.9});
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI/2;
+  ctfScene.add(floor);
+
+  // Grid lines on floor
+  const gridHelper = new THREE.GridHelper(A*2, 40, 0x1a1040, 0x1a1040);
+  gridHelper.position.y = 0.01;
+  ctfScene.add(gridHelper);
+
+  // Arena walls
+  const wallMat = new THREE.MeshStandardMaterial({color:0x2d1b69, transparent:true, opacity:0.6});
+  const wallH = 3;
+  const walls = [
+    {w:A*2, d:0.5, x:0, z:-A}, {w:A*2, d:0.5, x:0, z:A},
+    {w:0.5, d:A*2, x:-A, z:0}, {w:0.5, d:A*2, x:A, z:0}
+  ];
+  walls.forEach(w => {
+    const geo = new THREE.BoxGeometry(w.w, wallH, w.d);
+    const mesh = new THREE.Mesh(geo, wallMat);
+    mesh.position.set(w.x, wallH/2, w.z);
+    ctfScene.add(mesh);
+  });
+
+  // Obstacles (cover to hide behind)
+  const obstacleMat = new THREE.MeshStandardMaterial({color:0x3b1f8e, roughness:0.7});
+  const obstaclePositions = [
+    {x:-8, z:-6, w:4, h:2.5, d:1}, {x:8, z:-6, w:4, h:2.5, d:1},
+    {x:-5, z:5, w:1, h:2, d:4},   {x:5, z:5, w:1, h:2, d:4},
+    {x:0, z:0, w:6, h:1.8, d:1},  {x:-12, z:0, w:1, h:2, d:6},
+    {x:12, z:0, w:1, h:2, d:6},   {x:-6, z:-14, w:3, h:2, d:1},
+    {x:6, z:-14, w:3, h:2, d:1},  {x:0, z:10, w:2, h:2.5, d:2},
+    {x:-10, z:12, w:1, h:2, d:5}, {x:10, z:12, w:1, h:2, d:5},
+    {x:0, z:-10, w:2, h:2, d:2},
+  ];
+  obstaclePositions.forEach(o => {
+    const geo = new THREE.BoxGeometry(o.w, o.h, o.d);
+    const mesh = new THREE.Mesh(geo, obstacleMat);
+    mesh.position.set(o.x, o.h/2, o.z);
+    mesh.userData.isObstacle = true;
+    mesh.userData.hw = o.w/2; mesh.userData.hd = o.d/2;
+    ctfScene.add(mesh);
+  });
+}
+
+function buildCTFBases() {
+  // Home base (blue, bottom of arena)
+  const homeGeo = new THREE.CylinderGeometry(3, 3, 0.15, 32);
+  const homeMat = new THREE.MeshStandardMaterial({color:0x3b82f6, emissive:0x1e40af, emissiveIntensity:0.5});
+  ctfHomeBase = new THREE.Mesh(homeGeo, homeMat);
+  ctfHomeBase.position.set(0, 0.08, CTF_ARENA/2 - 3);
+  ctfScene.add(ctfHomeBase);
+
+  // Home base glow
+  const homeGlow = new THREE.PointLight(0x3b82f6, 1.5, 8);
+  homeGlow.position.set(0, 2, CTF_ARENA/2 - 3);
+  ctfScene.add(homeGlow);
+
+  // Home base pillar
+  const pillarGeo = new THREE.CylinderGeometry(0.2, 0.2, 3, 8);
+  const pillarMat = new THREE.MeshStandardMaterial({color:0x60a5fa, emissive:0x3b82f6, emissiveIntensity:0.3});
+  const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+  pillar.position.set(0, 1.5, CTF_ARENA/2 - 3);
+  ctfScene.add(pillar);
+
+  // Enemy base (red, top of arena)
+  const enemyGeo = new THREE.CylinderGeometry(3, 3, 0.15, 32);
+  const enemyMat = new THREE.MeshStandardMaterial({color:0xdc2626, emissive:0x991b1b, emissiveIntensity:0.5});
+  ctfFlagBase = new THREE.Mesh(enemyGeo, enemyMat);
+  ctfFlagBase.position.set(0, 0.08, -(CTF_ARENA/2 - 3));
+  ctfScene.add(ctfFlagBase);
+
+  // Enemy base glow
+  const enemyGlow = new THREE.PointLight(0xef4444, 1.5, 8);
+  enemyGlow.position.set(0, 2, -(CTF_ARENA/2 - 3));
+  ctfScene.add(enemyGlow);
+
+  // The FLAG (a floating glowing object at enemy base)
+  const flagGroup = new THREE.Group();
+  // Flag pole
+  const poleGeo = new THREE.CylinderGeometry(0.08, 0.08, 3, 8);
+  const poleMat = new THREE.MeshStandardMaterial({color:0xfbbf24});
+  const pole = new THREE.Mesh(poleGeo, poleMat);
+  pole.position.y = 1.5;
+  flagGroup.add(pole);
+  // Flag cloth (a flat box)
+  const clothGeo = new THREE.BoxGeometry(1.5, 1, 0.05);
+  const clothMat = new THREE.MeshStandardMaterial({color:0xef4444, emissive:0xdc2626, emissiveIntensity:0.6, side: THREE.DoubleSide});
+  const cloth = new THREE.Mesh(clothGeo, clothMat);
+  cloth.position.set(0.8, 2.4, 0);
+  flagGroup.add(cloth);
+  // Skull on flag
+  const skullGeo = new THREE.SphereGeometry(0.25, 8, 8);
+  const skullMat = new THREE.MeshStandardMaterial({color:0xffffff, emissive:0xffffff, emissiveIntensity:0.2});
+  const skull = new THREE.Mesh(skullGeo, skullMat);
+  skull.position.set(0.8, 2.4, 0.05);
+  flagGroup.add(skull);
+
+  flagGroup.position.set(0, 0, -(CTF_ARENA/2 - 3));
+  ctfFlag = flagGroup;
+  ctfScene.add(ctfFlag);
+}
+
+function spawnCTFEnemies() {
+  // More enemies and faster with higher levels
+  const count = Math.min(3 + ctfLevel, 10);
+  const speed = 0.04 + ctfLevel * 0.012;
+  const detectRange = 7 + ctfLevel * 0.5;
+
+  for (let i = 0; i < count; i++) {
+    const color = ['#ef4444','#f97316','#ec4899','#f43f5e','#fb923c'][i % 5];
+    const mesh = createGhostMesh({color:color, eyes:'angry', hat:'none', acc:'none'});
+    // Spread enemies in the enemy half of the arena
+    const angle = (i / count) * Math.PI * 2;
+    const radius = 6 + Math.random() * 8;
+    const ex = Math.sin(angle) * radius;
+    const ez = -(CTF_ARENA/2 - 10) + Math.cos(angle) * radius * 0.4;
+    mesh.position.set(ex, 0.8, Math.min(ez, -2));
+    ctfScene.add(mesh);
+
+    ctfEnemies.push({
+      mesh: mesh,
+      speed: speed + Math.random() * 0.02,
+      detectRange: detectRange,
+      patrolX: ex,
+      patrolZ: mesh.position.z,
+      targetX: ex + (Math.random()-0.5)*10,
+      targetZ: mesh.position.z + (Math.random()-0.5)*6,
+      chasing: false,
+      patrolTimer: Math.random() * 200
+    });
+  }
+}
+
+function onCTFKeyDown(e) { ctfKeys[e.code] = true; }
+function onCTFKeyUp(e) { ctfKeys[e.code] = false; }
+
+function setupCTFMobileControls() {
+  const area = document.getElementById('ctfJoystickArea');
+  const knob = document.getElementById('ctfJoystickKnob');
+  if (!area || !knob) return;
+
+  let touchId = null, cx, cy;
+  area.ontouchstart = (e) => {
+    e.preventDefault();
+    const t = e.touches[0];
+    const r = area.getBoundingClientRect();
+    cx = r.left + r.width/2;
+    cy = r.top + r.height/2;
+    touchId = t.identifier;
+    ctfJoystickActive = true;
+    updateCTFJoystick(t, area, knob, cx, cy);
+  };
+  area.ontouchmove = (e) => {
+    e.preventDefault();
+    for (let t of e.changedTouches) {
+      if (t.identifier === touchId) updateCTFJoystick(t, area, knob, cx, cy);
+    }
+  };
+  const endJoy = () => { ctfJoystickActive=false; ctfJoystickDX=0; ctfJoystickDZ=0; knob.style.transform='translate(-50%,-50%)'; };
+  area.ontouchend = endJoy;
+  area.ontouchcancel = endJoy;
+}
+
+function updateCTFJoystick(touch, area, knob, cx, cy) {
+  let dx = touch.clientX - cx;
+  let dy = touch.clientY - cy;
+  const maxDist = area.offsetWidth / 2 - knob.offsetWidth / 2;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist > maxDist) { dx = dx/dist*maxDist; dy = dy/dist*maxDist; }
+  knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  ctfJoystickDX = dx/maxDist;
+  ctfJoystickDZ = dy/maxDist;
+}
+
+function ctfLoop() {
+  if (!ctfRunning) return;
+  ctfAnimId = requestAnimationFrame(ctfLoop);
+
+  const t = Date.now() * 0.001;
+  const A = CTF_ARENA;
+
+  if (ctfDead || ctfWon) {
+    // Animate flag spinning even when dead/won
+    if (ctfFlag) ctfFlag.rotation.y += 0.02;
+    renderer.render(ctfScene, ctfCamera);
+    return;
+  }
+
+  // Update timer
+  const elapsed = Math.floor((Date.now() - ctfTimerStart) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  document.getElementById('ctfTimer').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+  // Player movement
+  const speed = 0.18;
+  let moveX = 0, moveZ = 0;
+  if (ctfKeys['KeyW']||ctfKeys['ArrowUp'])    moveZ -= speed;
+  if (ctfKeys['KeyS']||ctfKeys['ArrowDown'])  moveZ += speed;
+  if (ctfKeys['KeyA']||ctfKeys['ArrowLeft'])  moveX -= speed;
+  if (ctfKeys['KeyD']||ctfKeys['ArrowRight']) moveX += speed;
+  if (ctfJoystickActive) { moveX += ctfJoystickDX*speed; moveZ += ctfJoystickDZ*speed; }
+
+  ctfPlayer.position.x += moveX;
+  ctfPlayer.position.z += moveZ;
+
+  if (moveX !== 0 || moveZ !== 0) {
+    ctfPlayer.rotation.y = Math.atan2(moveX, moveZ);
+  }
+
+  // Arena bounds
+  ctfPlayer.position.x = Math.max(-(A-1.5), Math.min(A-1.5, ctfPlayer.position.x));
+  ctfPlayer.position.z = Math.max(-(A-1.5), Math.min(A-1.5, ctfPlayer.position.z));
+  ctfPlayer.position.y = 0.8 + Math.sin(t*2.5)*0.04;
+
+  // Camera follow (third person above/behind)
+  const camTarget = new THREE.Vector3(ctfPlayer.position.x, ctfPlayer.position.y + 8, ctfPlayer.position.z + 10);
+  ctfCamera.position.lerp(camTarget, 0.06);
+  ctfCamera.lookAt(ctfPlayer.position.x, ctfPlayer.position.y + 1, ctfPlayer.position.z);
+
+  // Flag pickup
+  if (!ctfHasFlag) {
+    const flagDist = ctfPlayer.position.distanceTo(ctfFlag.position);
+    if (flagDist < 3) {
+      ctfHasFlag = true;
+      ctfFlag.position.set(ctfPlayer.position.x, ctfPlayer.position.y + 1.5, ctfPlayer.position.z);
+      document.getElementById('ctfStatusBar').textContent = '🏃 You have the flag! Run back to your blue base!';
+      document.getElementById('ctfStatusBar').style.borderColor = '#ef4444';
+      toast('🏁 Flag grabbed! Run home!', '#10b981');
+    }
+  }
+
+  // Flag follows player when carried
+  if (ctfHasFlag && ctfFlag) {
+    ctfFlag.position.set(ctfPlayer.position.x, ctfPlayer.position.y + 1.2, ctfPlayer.position.z);
+    ctfFlag.rotation.y += 0.05;
+  } else if (ctfFlag) {
+    ctfFlag.rotation.y += 0.02;
+  }
+
+  // Win check: bring flag to home base
+  if (ctfHasFlag) {
+    const homeDist = ctfPlayer.position.distanceTo(ctfHomeBase.position);
+    if (homeDist < 3.5) {
+      ctfWon = true;
+      const timeBonus = Math.max(0, 200 - elapsed * 2);
+      const reward = 100 + timeBonus;
+      const currentBiomes = getBiomes();
+      setBiomes(currentBiomes + reward);
+      document.getElementById('ctfReward').textContent = reward;
+      document.getElementById('ctfWinTime').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+      document.getElementById('ctfWinOverlay').style.display = 'flex';
+      toast('🏆 Level ' + ctfLevel + ' complete! +' + reward + ' 💎', '#10b981');
+      return;
+    }
+  }
+
+  // Enemy AI
+  for (let e of ctfEnemies) {
+    const px = ctfPlayer.position.x;
+    const pz = ctfPlayer.position.z;
+    const ex = e.mesh.position.x;
+    const ez = e.mesh.position.z;
+    const distToPlayer = Math.sqrt((px-ex)*(px-ex) + (pz-ez)*(pz-ez));
+
+    // Chase if player in range (especially if carrying flag)
+    const effectiveRange = ctfHasFlag ? e.detectRange * 1.5 : e.detectRange;
+    if (distToPlayer < effectiveRange) {
+      e.chasing = true;
+      // Move toward player
+      const dx = px - ex;
+      const dz = pz - ez;
+      const d = Math.sqrt(dx*dx + dz*dz);
+      const chaseSpeed = ctfHasFlag ? e.speed * 1.3 : e.speed;
+      e.mesh.position.x += (dx/d) * chaseSpeed;
+      e.mesh.position.z += (dz/d) * chaseSpeed;
+      e.mesh.rotation.y = Math.atan2(dx, dz);
+    } else {
+      e.chasing = false;
+      // Patrol
+      const dx = e.targetX - ex;
+      const dz = e.targetZ - ez;
+      const d = Math.sqrt(dx*dx + dz*dz);
+      if (d < 1) {
+        e.patrolTimer++;
+        if (e.patrolTimer > 100) {
+          e.targetX = e.patrolX + (Math.random()-0.5)*14;
+          e.targetZ = e.patrolZ + (Math.random()-0.5)*8;
+          e.targetX = Math.max(-(A-2), Math.min(A-2, e.targetX));
+          e.targetZ = Math.max(-(A-2), Math.min(A-2, e.targetZ));
+          e.patrolTimer = 0;
+        }
+      } else {
+        e.mesh.position.x += (dx/d) * e.speed * 0.5;
+        e.mesh.position.z += (dz/d) * e.speed * 0.5;
+        e.mesh.rotation.y = Math.atan2(dx, dz);
+      }
+    }
+
+    // Bounce
+    e.mesh.position.y = 0.8 + Math.sin(t*3 + e.patrolX)*0.06;
+
+    // Arena bounds for enemies
+    e.mesh.position.x = Math.max(-(A-1.5), Math.min(A-1.5, e.mesh.position.x));
+    e.mesh.position.z = Math.max(-(A-1.5), Math.min(A-1.5, e.mesh.position.z));
+
+    // Catch player
+    if (distToPlayer < 1.2) {
+      ctfDead = true;
+      document.getElementById('ctfDeathOverlay').style.display = 'flex';
+      toast('💀 Caught by an enemy ghost!', '#ef4444');
+      return;
+    }
+  }
+
+  renderer.render(ctfScene, ctfCamera);
+}
+
+function stopCTF() {
+  ctfRunning = false;
+  ctfDead = false;
+  ctfWon = false;
+  ctfHasFlag = false;
+  if (ctfAnimId) cancelAnimationFrame(ctfAnimId);
+  document.removeEventListener('keydown', onCTFKeyDown);
+  document.removeEventListener('keyup', onCTFKeyUp);
+  ctfKeys = {};
+  ctfEnemies = [];
+  ctfJoystickActive = false;
+  ctfJoystickDX = 0;
+  ctfJoystickDZ = 0;
+  document.getElementById('ctfHud').style.display = 'none';
+  document.getElementById('ctfStatusBar').style.display = 'none';
+  document.getElementById('ctfDeathOverlay').style.display = 'none';
+  document.getElementById('ctfWinOverlay').style.display = 'none';
+}
+
+function exitCTF() {
+  stopCTF();
+  showScreen('lobby');
+}
+
+function retryCTF() {
+  stopCTF();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('ctfScreen');
+  if (el) el.classList.add('active');
+  currentScreen = 'ctf';
+  startCTF();
+}
+
+function nextCTFLevel() {
+  ctfLevel++;
+  stopCTF();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('ctfScreen');
+  if (el) el.classList.add('active');
+  currentScreen = 'ctf';
+  startCTF();
+}
+
+// ============================================
 // RESIZE HANDLER
 // ============================================
 window.addEventListener('resize', () => {
@@ -2660,6 +3236,7 @@ window.addEventListener('resize', () => {
   if (gameCamera) { gameCamera.aspect = w/h; gameCamera.updateProjectionMatrix(); }
   if (obbyCamera) { obbyCamera.aspect = w/h; obbyCamera.updateProjectionMatrix(); }
   if (shooterCamera) { shooterCamera.aspect = w/h; shooterCamera.updateProjectionMatrix(); }
+  if (ctfCamera) { ctfCamera.aspect = w/h; ctfCamera.updateProjectionMatrix(); }
 });
 
 // ============================================

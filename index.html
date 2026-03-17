@@ -425,6 +425,76 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
   background:rgba(20,5,50,.85); border:2px solid #a855f7;
 }
 
+/* Tag portal */
+.portal-tag { background:linear-gradient(135deg,#f43f5e,#e11d48); border-color:#fda4af; }
+
+/* Tag HUD */
+#tagHud {
+  position:fixed; top:15px; right:20px; z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #f43f5e; border-radius:14px; padding:10px 18px;
+  font-size:16px; display:none;
+}
+
+/* Tag status bar */
+#tagStatusBar {
+  position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:16;
+  background:rgba(20,5,50,.85); border:2px solid #f43f5e; border-radius:14px; padding:8px 18px;
+  font-size:15px; display:none; text-align:center;
+}
+
+/* Tag mobile controls */
+#tagMobileControls { display:none; position:fixed; bottom:0; left:0; width:100%; height:200px; z-index:16; pointer-events:none; }
+#tagJoystickArea {
+  position:absolute; bottom:30px; left:30px; width:120px; height:120px;
+  border-radius:50%; background:rgba(244,63,94,.2); border:3px solid rgba(244,63,94,.4);
+  pointer-events:auto; touch-action:none;
+}
+#tagJoystickKnob {
+  position:absolute; width:50px; height:50px; border-radius:50%;
+  background:rgba(251,113,133,.6); top:35px; left:35px; pointer-events:none;
+}
+#tagDashBtn {
+  position:absolute; bottom:50px; right:30px; width:80px; height:80px;
+  border-radius:50%; background:linear-gradient(135deg,#fbbf24,#f59e0b);
+  border:3px solid #fde68a; font-size:28px; display:flex; align-items:center;
+  justify-content:center; pointer-events:auto; touch-action:none; cursor:pointer;
+}
+@media (pointer:coarse) { #tagMobileControls { display:block; } }
+
+/* Tag caught overlay */
+#tagCaughtOverlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  z-index:50; background:rgba(220,38,38,.3); flex-direction:column;
+  align-items:center; justify-content:center; backdrop-filter:blur(4px);
+}
+
+/* Tag win overlay */
+#tagWinOverlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  z-index:50; background:rgba(16,185,129,.15); flex-direction:column;
+  align-items:center; justify-content:center; backdrop-filter:blur(3px);
+}
+
+/* Tag speed lines effect */
+#tagSpeedLines {
+  position:fixed; top:0; left:0; width:100%; height:100%; z-index:14;
+  pointer-events:none; display:none;
+  background:radial-gradient(ellipse at center, transparent 50%, rgba(244,63,94,.15) 100%);
+}
+
+/* Dash cooldown bar */
+#tagDashBar {
+  position:fixed; bottom:240px; right:30px; z-index:16; display:none;
+  width:80px; text-align:center; font-size:12px;
+}
+#tagDashBarTrack {
+  width:100%; height:8px; background:rgba(255,255,255,.15); border-radius:4px; overflow:hidden;
+}
+#tagDashBarFill {
+  width:100%; height:100%; background:linear-gradient(90deg,#fbbf24,#f59e0b); border-radius:4px;
+  transition:width 0.1s;
+}
+
 @media (max-width:500px) {
   .portal-grid { grid-template-columns:1fr 1fr; gap:10px; padding:12px; max-width:100%; }
   .portal-btn { padding:16px 10px; font-size:14px; }
@@ -475,6 +545,7 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
     <div class="portal-btn portal-shooter" onclick="showScreen('shooter')"><span class="emoji">🔫</span>Shooter Arena</div>
     <div class="portal-btn portal-ctf" onclick="showScreen('ctf')"><span class="emoji">🏁</span>Capture Flag</div>
     <div class="portal-btn portal-has" onclick="showScreen('has')"><span class="emoji">👀</span>Hide & Seek</div>
+    <div class="portal-btn portal-tag" onclick="showScreen('tag')"><span class="emoji">🏃‍♂️</span>Tag!</div>
   </div>
   <div id="chatBox">
     <div class="chat-msg"><span class="chat-npc">🤖 Boo Bot:</span> Welcome to Mini Boo! Pick a door!</div>
@@ -698,6 +769,55 @@ canvas { position:fixed; top:0; left:0; z-index:0; }
   </div>
 </div>
 
+<!-- SCREEN 11: Tag -->
+<div id="tagScreen" class="screen">
+  <button class="btn btn-purple btn-sm btn-back" onclick="exitTag()">← Lobby</button>
+  <div id="tagHud">
+    <div>👻 <span id="tagUser">Player</span></div>
+    <div class="biomes-display">💎 <span id="tagBiomesDisplay">100</span></div>
+    <div style="color:#f43f5e">🏃 Level: <span id="tagLevel">1</span></div>
+    <div style="color:#fbbf24">⏱️ <span id="tagTimer">0:00</span></div>
+  </div>
+  <div id="tagStatusBar">🏃 RUN! The tagger is coming!</div>
+  <div id="tagSpeedLines"></div>
+  <div id="tagDashBar">
+    <div id="tagDashBarTrack"><div id="tagDashBarFill"></div></div>
+    <span style="color:#fbbf24">⚡ DASH</span>
+  </div>
+  <div id="tagMobileControls">
+    <div id="tagJoystickArea"><div id="tagJoystickKnob"></div></div>
+    <div id="tagDashBtn">⚡</div>
+  </div>
+</div>
+
+<!-- Tag Caught Overlay -->
+<div id="tagCaughtOverlay">
+  <div class="panel" style="text-align:center;max-width:380px;">
+    <div style="font-size:64px;margin-bottom:8px">💨</div>
+    <h2 style="color:#ef4444;font-size:36px;margin-bottom:10px">TAGGED!</h2>
+    <p style="color:#a78bfa;font-size:16px;margin-bottom:6px">You lasted <span id="tagTimeAlive" style="color:#fbbf24">0:00</span></p>
+    <p style="color:#fda4af;font-size:14px;margin-bottom:20px">That ghost is FAST 💀</p>
+    <div>
+      <button class="btn btn-purple" onclick="exitTag()">← Lobby</button>
+      <button class="btn btn-red" onclick="retryTag()" style="margin-left:8px">🔄 Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tag Win Overlay -->
+<div id="tagWinOverlay">
+  <div class="panel" style="text-align:center;max-width:380px;">
+    <div style="font-size:64px;margin-bottom:8px">🏆</div>
+    <h2 style="color:#10b981;font-size:36px;margin-bottom:10px">OUTRAN IT!</h2>
+    <p style="color:#fbbf24;font-size:18px;margin-bottom:6px">+<span id="tagReward">200</span> 💎</p>
+    <p style="color:#a78bfa;font-size:14px;margin-bottom:20px">You're too fast! 🏃💨</p>
+    <div>
+      <button class="btn btn-purple" onclick="exitTag()">← Lobby</button>
+      <button class="btn btn-green" onclick="nextTagLevel()" style="margin-left:8px">▶ Next Level</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================
 // GLOBAL STATE
@@ -755,6 +875,19 @@ let hasHidingSpots = [];
 const HAS_ARENA = 35;
 const HAS_HIDE_TIME = 5000; // 5 seconds to hide
 const HAS_SURVIVE_BASE = 45; // seconds to survive level 1
+
+// Tag state
+let tagRunning = false, tagCaught = false, tagWon = false;
+let tagScene, tagCamera, tagPlayer, tagPlayerMesh;
+let tagKeys = {}, tagAnimId;
+let tagJoystickActive = false, tagJoystickDX = 0, tagJoystickDZ = 0;
+let tagTagger, tagTaggerMesh;
+let tagLevel = 1, tagTimerStart = 0;
+let tagDashing = false, tagDashCooldown = 0, tagLastDash = 0;
+const TAG_ARENA = 45;
+const TAG_SURVIVE_BASE = 30; // seconds to survive level 1
+const TAG_DASH_DURATION = 300; // ms
+const TAG_DASH_COOLDOWN = 3000; // ms
 
 let editorGrid = [];
 const EDITOR_COLS = 20, EDITOR_ROWS = 15;
@@ -849,6 +982,8 @@ function updateAllBiomes() {
   if (cbd) cbd.textContent = b;
   const hbd = document.getElementById('hasBiomesDisplay');
   if (hbd) hbd.textContent = b;
+  const tbd = document.getElementById('tagBiomesDisplay');
+  if (tbd) tbd.textContent = b;
 }
 
 // ============================================
@@ -906,12 +1041,14 @@ function showScreen(name) {
   if (name === 'shooter') startShooter();
   if (name === 'ctf') startCTF();
   if (name === 'has') startHaS();
+  if (name === 'tag') startTag();
 
   if (name !== 'game' && gameRunning) stopGame();
   if (name !== 'obby' && obbyRunning) stopObby();
   if (name !== 'shooter' && shooterRunning) stopShooter();
   if (name !== 'ctf' && ctfRunning) stopCTF();
   if (name !== 'has' && hasRunning) stopHaS();
+  if (name !== 'tag' && tagRunning) stopTag();
 }
 
 // ============================================
@@ -3796,6 +3933,426 @@ function nextHaSLevel() {
 }
 
 // ============================================
+// TAG GAME — "IT" goes 60 km/h 💀
+// ============================================
+
+function startTag() {
+  tagRunning = true;
+  tagCaught = false;
+  tagWon = false;
+  tagDashing = false;
+  tagDashCooldown = 0;
+  tagLastDash = 0;
+  tagKeys = {};
+  tagJoystickActive = false;
+  tagJoystickDX = 0;
+  tagJoystickDZ = 0;
+  tagTimerStart = Date.now();
+
+  document.getElementById('tagUser').textContent = currentUser || 'Player';
+  document.getElementById('tagLevel').textContent = tagLevel;
+  document.getElementById('tagTimer').textContent = '0:00';
+  document.getElementById('tagHud').style.display = 'block';
+  document.getElementById('tagStatusBar').style.display = 'block';
+  document.getElementById('tagStatusBar').textContent = '🏃 RUN! The tagger is coming!';
+  document.getElementById('tagStatusBar').style.borderColor = '#f43f5e';
+  document.getElementById('tagCaughtOverlay').style.display = 'none';
+  document.getElementById('tagWinOverlay').style.display = 'none';
+  document.getElementById('tagSpeedLines').style.display = 'none';
+  document.getElementById('tagDashBar').style.display = 'block';
+  document.getElementById('tagDashBarFill').style.width = '100%';
+  updateAllBiomes();
+
+  // Scene
+  tagScene = new THREE.Scene();
+  tagScene.background = new THREE.Color(0x080418);
+  tagScene.fog = new THREE.Fog(0x080418, 25, 65);
+
+  tagCamera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 200);
+
+  tagScene.add(new THREE.AmbientLight(0x301050, 0.6));
+  const sun = new THREE.DirectionalLight(0xf43f5e, 0.3);
+  sun.position.set(5, 15, 5);
+  tagScene.add(sun);
+
+  // Ominous red glow
+  const redGlow = new THREE.PointLight(0xf43f5e, 0.5, 60);
+  redGlow.position.set(0, 10, 0);
+  tagScene.add(redGlow);
+
+  // Stars
+  const sg = new THREE.BufferGeometry();
+  const sv = [];
+  for (let i = 0; i < 500; i++) sv.push((Math.random()-0.5)*140, Math.random()*35+5, (Math.random()-0.5)*140);
+  sg.setAttribute('position', new THREE.Float32BufferAttribute(sv, 3));
+  tagScene.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff, size:0.12})));
+
+  buildTagArena();
+
+  // Player starts at one corner
+  const av = getAvatar();
+  tagPlayerMesh = createGhostMesh(av);
+  tagPlayerMesh.position.set(TAG_ARENA/2 - 5, 0.8, TAG_ARENA/2 - 5);
+  tagScene.add(tagPlayerMesh);
+  tagPlayer = tagPlayerMesh;
+
+  // THE TAGGER — starts at opposite corner, absurdly fast
+  tagTaggerMesh = createGhostMesh({color:'#ef4444', eyes:'angry', hat:'none', acc:'none'});
+  tagTaggerMesh.position.set(-(TAG_ARENA/2 - 5), 0.8, -(TAG_ARENA/2 - 5));
+  tagTaggerMesh.scale.set(1.6, 1.6, 1.6); // Big scary ghost
+  tagScene.add(tagTaggerMesh);
+
+  // Tagger eye glow (menacing)
+  const eyeGlow1 = new THREE.PointLight(0xff0000, 2, 10);
+  eyeGlow1.position.set(0, 1.2, 0);
+  tagTaggerMesh.add(eyeGlow1);
+
+  // Trail particles for the tagger
+  const trailGeo = new THREE.BufferGeometry();
+  const trailVerts = new Float32Array(90); // 30 particles * 3
+  trailGeo.setAttribute('position', new THREE.Float32BufferAttribute(trailVerts, 3));
+  const trailMat = new THREE.PointsMaterial({color:0xff4444, size:0.4, transparent:true, opacity:0.6});
+  const trailPts = new THREE.Points(trailGeo, trailMat);
+  tagScene.add(trailPts);
+
+  tagTagger = {
+    mesh: tagTaggerMesh,
+    // "60 km/h" feel: starts moderate, ramps up to insane speed
+    baseSpeed: 0.12 + tagLevel * 0.03,
+    maxSpeed: 0.35 + tagLevel * 0.05, // This is FAST
+    currentSpeed: 0.08,
+    accelRate: 0.0008, // gradually speeds up
+    trail: trailPts,
+    trailPositions: [],
+    lastTurnChange: 0,
+    predictX: 0, predictZ: 0
+  };
+
+  document.addEventListener('keydown', onTagKeyDown);
+  document.addEventListener('keyup', onTagKeyUp);
+  setupTagMobileControls();
+
+  tagLoop();
+}
+
+function buildTagArena() {
+  const A = TAG_ARENA;
+
+  // Floor
+  const floorGeo = new THREE.PlaneGeometry(A*2, A*2);
+  const floorMat = new THREE.MeshStandardMaterial({color:0x0c0420, roughness:0.9});
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI/2;
+  tagScene.add(floor);
+
+  // Red-tinted grid
+  const grid = new THREE.GridHelper(A*2, 40, 0x200818, 0x200818);
+  grid.position.y = 0.01;
+  tagScene.add(grid);
+
+  // Arena walls
+  const wallMat = new THREE.MeshStandardMaterial({color:0x2a0a3a, roughness:0.7});
+  const wallH = 3.5;
+  [{w:A*2,d:0.5,x:0,z:-A},{w:A*2,d:0.5,x:0,z:A},{w:0.5,d:A*2,x:-A,z:0},{w:0.5,d:A*2,x:A,z:0}].forEach(w => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w.w, wallH, w.d), wallMat);
+    m.position.set(w.x, wallH/2, w.z);
+    tagScene.add(m);
+  });
+
+  // Obstacles to dodge around (not too many, it's about speed)
+  const obsMat = new THREE.MeshStandardMaterial({color:0x3b1560, roughness:0.6});
+  const obstacles = [
+    {x:0, z:0, w:4, h:2.5, d:4},       // center block
+    {x:-15, z:-10, w:3, h:3, d:2},
+    {x:15, z:10, w:3, h:3, d:2},
+    {x:-10, z:8, w:2, h:2.5, d:6},
+    {x:10, z:-8, w:2, h:2.5, d:6},
+    {x:0, z:15, w:8, h:2, d:1},
+    {x:0, z:-15, w:8, h:2, d:1},
+    {x:-18, z:0, w:1.5, h:3, d:8},
+    {x:18, z:0, w:1.5, h:3, d:8},
+    {x:-8, z:-16, w:3, h:2.5, d:2},
+    {x:8, z:16, w:3, h:2.5, d:2},
+    {x:12, z:-16, w:2, h:3, d:3},
+    {x:-12, z:16, w:2, h:3, d:3},
+  ];
+  obstacles.forEach(o => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(o.w, o.h, o.d), obsMat);
+    m.position.set(o.x, o.h/2, o.z);
+    tagScene.add(m);
+    // Warning lights on obstacles
+    if (Math.random() > 0.5) {
+      const wl = new THREE.PointLight(0xf43f5e, 0.3, 4);
+      wl.position.set(o.x, o.h + 0.5, o.z);
+      tagScene.add(wl);
+    }
+  });
+}
+
+function onTagKeyDown(e) {
+  tagKeys[e.code] = true;
+  if (e.code === 'Space' || e.code === 'ShiftLeft') doTagDash();
+}
+function onTagKeyUp(e) { tagKeys[e.code] = false; }
+
+function doTagDash() {
+  if (!tagRunning || tagCaught || tagWon || tagDashing) return;
+  const now = Date.now();
+  if (now - tagLastDash < TAG_DASH_COOLDOWN) return;
+  tagDashing = true;
+  tagLastDash = now;
+  document.getElementById('tagSpeedLines').style.display = 'block';
+  setTimeout(() => {
+    tagDashing = false;
+    document.getElementById('tagSpeedLines').style.display = 'none';
+  }, TAG_DASH_DURATION);
+}
+
+function setupTagMobileControls() {
+  const area = document.getElementById('tagJoystickArea');
+  const knob = document.getElementById('tagJoystickKnob');
+  const dashBtn = document.getElementById('tagDashBtn');
+  if (!area || !knob) return;
+
+  let touchId = null, cx, cy;
+  area.ontouchstart = (e) => {
+    e.preventDefault();
+    const t = e.touches[0];
+    const r = area.getBoundingClientRect();
+    cx = r.left + r.width/2;
+    cy = r.top + r.height/2;
+    touchId = t.identifier;
+    tagJoystickActive = true;
+    updateTagJoystick(t, area, knob, cx, cy);
+  };
+  area.ontouchmove = (e) => {
+    e.preventDefault();
+    for (let t of e.changedTouches) {
+      if (t.identifier === touchId) updateTagJoystick(t, area, knob, cx, cy);
+    }
+  };
+  const endJoy = () => { tagJoystickActive=false; tagJoystickDX=0; tagJoystickDZ=0; knob.style.transform='translate(-50%,-50%)'; };
+  area.ontouchend = endJoy;
+  area.ontouchcancel = endJoy;
+
+  if (dashBtn) {
+    dashBtn.ontouchstart = (e) => { e.preventDefault(); doTagDash(); };
+  }
+}
+
+function updateTagJoystick(touch, area, knob, cx, cy) {
+  let dx = touch.clientX - cx;
+  let dy = touch.clientY - cy;
+  const maxDist = area.offsetWidth / 2 - knob.offsetWidth / 2;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist > maxDist) { dx = dx/dist*maxDist; dy = dy/dist*maxDist; }
+  knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  tagJoystickDX = dx/maxDist;
+  tagJoystickDZ = dy/maxDist;
+}
+
+function tagLoop() {
+  if (!tagRunning) return;
+  tagAnimId = requestAnimationFrame(tagLoop);
+
+  const now = Date.now();
+  const t = now * 0.001;
+  const A = TAG_ARENA;
+
+  if (tagCaught || tagWon) {
+    tagTagger.mesh.position.y = 0.8 + Math.sin(t*3)*0.08;
+    renderer.render(tagScene, tagCamera);
+    return;
+  }
+
+  // Timer
+  const elapsed = Math.floor((now - tagTimerStart) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  document.getElementById('tagTimer').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+  // Dash cooldown UI
+  const dashElapsed = now - tagLastDash;
+  if (dashElapsed < TAG_DASH_COOLDOWN) {
+    const pct = (dashElapsed / TAG_DASH_COOLDOWN) * 100;
+    document.getElementById('tagDashBarFill').style.width = pct + '%';
+  } else {
+    document.getElementById('tagDashBarFill').style.width = '100%';
+  }
+
+  // Player movement
+  const baseSpeed = 0.2;
+  const dashMultiplier = tagDashing ? 3.5 : 1;
+  const speed = baseSpeed * dashMultiplier;
+  let moveX = 0, moveZ = 0;
+  if (tagKeys['KeyW']||tagKeys['ArrowUp'])    moveZ -= speed;
+  if (tagKeys['KeyS']||tagKeys['ArrowDown'])  moveZ += speed;
+  if (tagKeys['KeyA']||tagKeys['ArrowLeft'])  moveX -= speed;
+  if (tagKeys['KeyD']||tagKeys['ArrowRight']) moveX += speed;
+  if (tagJoystickActive) { moveX += tagJoystickDX*speed; moveZ += tagJoystickDZ*speed; }
+
+  tagPlayer.position.x += moveX;
+  tagPlayer.position.z += moveZ;
+
+  if (moveX !== 0 || moveZ !== 0) {
+    tagPlayer.rotation.y = Math.atan2(moveX, moveZ);
+  }
+
+  // Arena bounds
+  tagPlayer.position.x = Math.max(-(A-1.5), Math.min(A-1.5, tagPlayer.position.x));
+  tagPlayer.position.z = Math.max(-(A-1.5), Math.min(A-1.5, tagPlayer.position.z));
+  tagPlayer.position.y = 0.8 + Math.sin(t*3)*0.04;
+
+  // Camera
+  const camTarget = new THREE.Vector3(tagPlayer.position.x, tagPlayer.position.y + 10, tagPlayer.position.z + 12);
+  tagCamera.position.lerp(camTarget, 0.07);
+  tagCamera.lookAt(tagPlayer.position.x, tagPlayer.position.y + 1, tagPlayer.position.z);
+
+  // ======= TAGGER AI — "60 km/h" feel =======
+  const tg = tagTagger;
+  const sx = tg.mesh.position.x;
+  const sz = tg.mesh.position.z;
+  const px = tagPlayer.position.x;
+  const pz = tagPlayer.position.z;
+  const dx = px - sx;
+  const dz = pz - sz;
+  const distToPlayer = Math.sqrt(dx*dx + dz*dz);
+
+  // Speed ramps up over time (starts slow, gets INSANE)
+  tg.currentSpeed = Math.min(tg.maxSpeed, tg.currentSpeed + tg.accelRate);
+
+  // Predict where player is going (intercept path)
+  if (moveX !== 0 || moveZ !== 0) {
+    tg.predictX = px + moveX * 15; // predict ahead
+    tg.predictZ = pz + moveZ * 15;
+  } else {
+    tg.predictX = px;
+    tg.predictZ = pz;
+  }
+
+  // Mix between direct chase and prediction for smart movement
+  const predWeight = Math.min(0.4 + tagLevel * 0.1, 0.7);
+  const chaseX = px * (1-predWeight) + tg.predictX * predWeight;
+  const chaseZ = pz * (1-predWeight) + tg.predictZ * predWeight;
+
+  const cdx = chaseX - sx;
+  const cdz = chaseZ - sz;
+  const cd = Math.sqrt(cdx*cdx + cdz*cdz);
+  if (cd > 0.5) {
+    tg.mesh.position.x += (cdx/cd) * tg.currentSpeed;
+    tg.mesh.position.z += (cdz/cd) * tg.currentSpeed;
+    tg.mesh.rotation.y = Math.atan2(cdx, cdz);
+  }
+
+  // Arena bounds for tagger
+  tg.mesh.position.x = Math.max(-(A-1.5), Math.min(A-1.5, tg.mesh.position.x));
+  tg.mesh.position.z = Math.max(-(A-1.5), Math.min(A-1.5, tg.mesh.position.z));
+  tg.mesh.position.y = 0.8 + Math.sin(t*4)*0.08; // aggressive bounce
+
+  // Update tagger trail
+  tg.trailPositions.unshift({x:tg.mesh.position.x, y:tg.mesh.position.y, z:tg.mesh.position.z});
+  if (tg.trailPositions.length > 30) tg.trailPositions.pop();
+  const trailArr = tg.trail.geometry.attributes.position.array;
+  for (let i = 0; i < 30; i++) {
+    const p = tg.trailPositions[i] || tg.trailPositions[tg.trailPositions.length-1] || {x:0,y:0,z:0};
+    trailArr[i*3] = p.x + (Math.random()-0.5)*0.3;
+    trailArr[i*3+1] = p.y + (Math.random()-0.5)*0.3;
+    trailArr[i*3+2] = p.z + (Math.random()-0.5)*0.3;
+  }
+  tg.trail.geometry.attributes.position.needsUpdate = true;
+
+  // Status bar shows how close the tagger is
+  if (distToPlayer < 8) {
+    document.getElementById('tagStatusBar').textContent = '🚨🚨🚨 HE\'S RIGHT BEHIND YOU!!! 🚨🚨🚨';
+    document.getElementById('tagStatusBar').style.borderColor = '#ef4444';
+  } else if (distToPlayer < 20) {
+    document.getElementById('tagStatusBar').textContent = '😰 The tagger is getting close!';
+    document.getElementById('tagStatusBar').style.borderColor = '#fbbf24';
+  } else {
+    document.getElementById('tagStatusBar').textContent = '🏃 Keep running! Don\'t let it catch you!';
+    document.getElementById('tagStatusBar').style.borderColor = '#f43f5e';
+  }
+
+  // CAUGHT
+  if (distToPlayer < 1.5) {
+    tagCaught = true;
+    document.getElementById('tagTimeAlive').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    document.getElementById('tagCaughtOverlay').style.display = 'flex';
+    document.getElementById('tagSpeedLines').style.display = 'none';
+    document.getElementById('tagDashBar').style.display = 'none';
+    toast('💀 TAGGED! That ghost is too fast!', '#ef4444');
+    return;
+  }
+
+  // WIN: survived long enough
+  const surviveTime = TAG_SURVIVE_BASE + (tagLevel - 1) * 10;
+  if (elapsed >= surviveTime) {
+    tagWon = true;
+    const reward = 200 + tagLevel * 50;
+    const currentBiomes = getBiomes();
+    setBiomes(currentBiomes + reward);
+    document.getElementById('tagReward').textContent = reward;
+    document.getElementById('tagWinOverlay').style.display = 'flex';
+    document.getElementById('tagSpeedLines').style.display = 'none';
+    document.getElementById('tagDashBar').style.display = 'none';
+    toast('🏆 You outran the tagger! +' + reward + ' 💎', '#10b981');
+    return;
+  }
+
+  // Show remaining time
+  const remaining = surviveTime - elapsed;
+  if (remaining <= 10) {
+    document.getElementById('tagStatusBar').textContent = '⏱️ ALMOST THERE! ' + remaining + 's left!';
+  }
+
+  renderer.render(tagScene, tagCamera);
+}
+
+function stopTag() {
+  tagRunning = false;
+  tagCaught = false;
+  tagWon = false;
+  tagDashing = false;
+  if (tagAnimId) cancelAnimationFrame(tagAnimId);
+  document.removeEventListener('keydown', onTagKeyDown);
+  document.removeEventListener('keyup', onTagKeyUp);
+  tagKeys = {};
+  tagJoystickActive = false;
+  tagJoystickDX = 0;
+  tagJoystickDZ = 0;
+  document.getElementById('tagHud').style.display = 'none';
+  document.getElementById('tagStatusBar').style.display = 'none';
+  document.getElementById('tagCaughtOverlay').style.display = 'none';
+  document.getElementById('tagWinOverlay').style.display = 'none';
+  document.getElementById('tagSpeedLines').style.display = 'none';
+  document.getElementById('tagDashBar').style.display = 'none';
+}
+
+function exitTag() {
+  stopTag();
+  showScreen('lobby');
+}
+
+function retryTag() {
+  stopTag();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('tagScreen');
+  if (el) el.classList.add('active');
+  currentScreen = 'tag';
+  startTag();
+}
+
+function nextTagLevel() {
+  tagLevel++;
+  stopTag();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('tagScreen');
+  if (el) el.classList.add('active');
+  currentScreen = 'tag';
+  startTag();
+}
+
+// ============================================
 // RESIZE HANDLER
 // ============================================
 window.addEventListener('resize', () => {
@@ -3807,6 +4364,7 @@ window.addEventListener('resize', () => {
   if (shooterCamera) { shooterCamera.aspect = w/h; shooterCamera.updateProjectionMatrix(); }
   if (ctfCamera) { ctfCamera.aspect = w/h; ctfCamera.updateProjectionMatrix(); }
   if (hasCamera) { hasCamera.aspect = w/h; hasCamera.updateProjectionMatrix(); }
+  if (tagCamera) { tagCamera.aspect = w/h; tagCamera.updateProjectionMatrix(); }
 });
 
 // ============================================

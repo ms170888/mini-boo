@@ -973,15 +973,16 @@ function toggleMusic() {
   if (musicPlaying) {
     bgMusic.pause();
     musicPlaying = false;
+    localStorage.setItem('miniboo_music', 'off');
     btn.textContent = '🔇';
     btn.classList.add('muted');
   } else {
     bgMusic.play().then(() => {
       musicPlaying = true;
+      localStorage.setItem('miniboo_music', 'on');
       btn.textContent = '🎵';
       btn.classList.remove('muted');
     }).catch(() => {
-      // Autoplay blocked, will work after user interaction
       toast('Tap again to start music!', '#7c3aed');
     });
   }
@@ -992,6 +993,7 @@ function startMusicOnInteraction() {
   if (!musicPlaying) {
     bgMusic.play().then(() => {
       musicPlaying = true;
+      localStorage.setItem('miniboo_music', 'on');
       document.getElementById('musicToggle').textContent = '🎵';
       document.getElementById('musicToggle').classList.remove('muted');
     }).catch(() => {});
@@ -1001,6 +1003,28 @@ function startMusicOnInteraction() {
 }
 document.addEventListener('click', startMusicOnInteraction);
 document.addEventListener('touchstart', startMusicOnInteraction);
+
+// Resume music when returning to the tab/app
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && musicPlaying) {
+    bgMusic.play().catch(() => {});
+  }
+});
+window.addEventListener('focus', () => {
+  if (musicPlaying) {
+    bgMusic.play().catch(() => {});
+  }
+});
+// Remember saved position so it picks up where it left off
+bgMusic.addEventListener('pause', () => {
+  if (musicPlaying) localStorage.setItem('miniboo_music_time', bgMusic.currentTime);
+});
+// Restore music state on page load
+if (localStorage.getItem('miniboo_music') === 'on') {
+  const savedTime = parseFloat(localStorage.getItem('miniboo_music_time') || '0');
+  bgMusic.currentTime = savedTime;
+  // Will auto-play on first interaction since autoplay is blocked
+}
 
 function toast(msg, color='#7c3aed') {
   const t = document.getElementById('toast');

@@ -921,26 +921,46 @@ const COLORS = [
   {name:'Green',hex:'#6ee7b7'},{name:'Yellow',hex:'#fde68a'},{name:'Purple',hex:'#c084fc'},
   {name:'Red',hex:'#fca5a5'},{name:'Orange',hex:'#fdba74'}
 ];
-const EYES = [{name:'Normal',id:'normal'},{name:'Happy',id:'happy'},{name:'Cool',id:'cool'}];
-const HATS = [{name:'None',id:'none',price:0},{name:'Crown',id:'crown',price:0},{name:'Wizard',id:'wizard',price:30},{name:'Cap',id:'cap',price:20}];
-const ACCS = [{name:'None',id:'none',price:0},{name:'Glasses',id:'glasses',price:0},{name:'Cape',id:'cape',price:25},{name:'Wings',id:'wings',price:40}];
+const EYES = [{name:'Normal',id:'normal'},{name:'Happy',id:'happy'},{name:'Cool',id:'cool'},{name:'Angry',id:'angry'},{name:'Sleepy',id:'sleepy'},{name:'Star',id:'star'},{name:'Heart',id:'heart'},{name:'Cyclops',id:'cyclops'}];
+const HATS = [{name:'None',id:'none',price:0},{name:'Crown',id:'crown',price:0},{name:'Wizard',id:'wizard',price:30},{name:'Cap',id:'cap',price:20},{name:'Top Hat',id:'tophat',price:35},{name:'Pirate',id:'pirate',price:45},{name:'Halo',id:'halo',price:50},{name:'Viking',id:'viking',price:60},{name:'Chef',id:'chef',price:25},{name:'Party',id:'party',price:15},{name:'Ninja',id:'ninja',price:55},{name:'Astronaut',id:'astronaut',price:75}];
+const ACCS = [{name:'None',id:'none',price:0},{name:'Glasses',id:'glasses',price:0},{name:'Cape',id:'cape',price:25},{name:'Wings',id:'wings',price:40},{name:'Bow Tie',id:'bowtie',price:15},{name:'Scarf',id:'scarf',price:20},{name:'Sword',id:'sword',price:50},{name:'Shield',id:'shield',price:45},{name:'Tail',id:'tail',price:30},{name:'Aura',id:'aura',price:60},{name:'Headphones',id:'headphones',price:35},{name:'Backpack',id:'backpack',price:25}];
 
 const SHOP_ITEMS = [
   {cat:'Hats',items:[
     {name:'Crown',id:'hat_crown',icon:'👑',price:0,type:'hat',val:'crown'},
     {name:'Wizard Hat',id:'hat_wizard',icon:'🧙',price:30,type:'hat',val:'wizard'},
     {name:'Cool Cap',id:'hat_cap',icon:'🧢',price:20,type:'hat',val:'cap'},
+    {name:'Top Hat',id:'hat_tophat',icon:'🎩',price:35,type:'hat',val:'tophat'},
+    {name:'Pirate Hat',id:'hat_pirate',icon:'🏴‍☠️',price:45,type:'hat',val:'pirate'},
+    {name:'Halo',id:'hat_halo',icon:'😇',price:50,type:'hat',val:'halo'},
+    {name:'Viking Helm',id:'hat_viking',icon:'⚔️',price:60,type:'hat',val:'viking'},
+    {name:'Chef Hat',id:'hat_chef',icon:'👨‍🍳',price:25,type:'hat',val:'chef'},
+    {name:'Party Hat',id:'hat_party',icon:'🎉',price:15,type:'hat',val:'party'},
+    {name:'Ninja Hood',id:'hat_ninja',icon:'🥷',price:55,type:'hat',val:'ninja'},
+    {name:'Astronaut',id:'hat_astronaut',icon:'🚀',price:75,type:'hat',val:'astronaut'},
   ]},
   {cat:'Accessories',items:[
     {name:'Glasses',id:'acc_glasses',icon:'👓',price:0,type:'acc',val:'glasses'},
     {name:'Cape',id:'acc_cape',icon:'🦸',price:25,type:'acc',val:'cape'},
     {name:'Wings',id:'acc_wings',icon:'🪽',price:40,type:'acc',val:'wings'},
+    {name:'Bow Tie',id:'acc_bowtie',icon:'🎀',price:15,type:'acc',val:'bowtie'},
+    {name:'Scarf',id:'acc_scarf',icon:'🧣',price:20,type:'acc',val:'scarf'},
+    {name:'Sword',id:'acc_sword',icon:'⚔️',price:50,type:'acc',val:'sword'},
+    {name:'Shield',id:'acc_shield',icon:'🛡️',price:45,type:'acc',val:'shield'},
+    {name:'Tail',id:'acc_tail',icon:'🦊',price:30,type:'acc',val:'tail'},
+    {name:'Aura',id:'acc_aura',icon:'✨',price:60,type:'acc',val:'aura'},
+    {name:'Headphones',id:'acc_headphones',icon:'🎧',price:35,type:'acc',val:'headphones'},
+    {name:'Backpack',id:'acc_backpack',icon:'🎒',price:25,type:'acc',val:'backpack'},
   ]},
   {cat:'Colors',items:[
     {name:'Blue Glow',id:'col_blue',icon:'🔵',price:15,type:'color',val:'#60a5fa'},
     {name:'Pink Glow',id:'col_pink',icon:'🩷',price:15,type:'color',val:'#f9a8d4'},
     {name:'Gold Glow',id:'col_gold',icon:'🟡',price:25,type:'color',val:'#fbbf24'},
     {name:'Lava Red',id:'col_red',icon:'🔴',price:20,type:'color',val:'#fca5a5'},
+    {name:'Toxic Green',id:'col_green',icon:'🟢',price:20,type:'color',val:'#4ade80'},
+    {name:'Ice Blue',id:'col_ice',icon:'🧊',price:30,type:'color',val:'#67e8f9'},
+    {name:'Shadow',id:'col_shadow',icon:'⚫',price:35,type:'color',val:'#374151'},
+    {name:'Rainbow',id:'col_rainbow',icon:'🌈',price:50,type:'color',val:'#e879f9'},
   ]}
 ];
 
@@ -1221,17 +1241,65 @@ function createGhostMesh(avatar) {
   group.add(tail);
 
   // Eyes
-  const eyeColor = avatar.eyes === 'cool' ? 0x00bfff : 0x111111;
+  const eyeColor = avatar.eyes === 'cool' ? 0x00bfff : avatar.eyes === 'angry' ? 0xff2222 : avatar.eyes === 'star' ? 0xfbbf24 : avatar.eyes === 'heart' ? 0xff69b4 : 0x111111;
   const eyeMat = new THREE.MeshPhongMaterial({color:eyeColor, emissive:eyeColor, emissiveIntensity:0.3});
 
   if (avatar.eyes === 'happy') {
-    // Happy eyes: small arcs (approximated with flattened spheres)
     [-0.18, 0.18].forEach(x => {
       const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), eyeMat);
       eye.scale.set(1, 0.5, 0.6);
       eye.position.set(x, 0.55, 0.48);
       group.add(eye);
     });
+  } else if (avatar.eyes === 'angry') {
+    [-0.18, 0.18].forEach((x, i) => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), eyeMat);
+      eye.position.set(x, 0.45, 0.5);
+      group.add(eye);
+      // Angry eyebrow
+      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.04), new THREE.MeshPhongMaterial({color:0x111111}));
+      brow.position.set(x, 0.56, 0.52);
+      brow.rotation.z = i === 0 ? -0.4 : 0.4;
+      group.add(brow);
+    });
+  } else if (avatar.eyes === 'sleepy') {
+    [-0.18, 0.18].forEach(x => {
+      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, 0.06), new THREE.MeshPhongMaterial({color:0x111111}));
+      eye.position.set(x, 0.45, 0.52);
+      group.add(eye);
+    });
+    // Z's
+    const zMat = new THREE.MeshBasicMaterial({color:0xa78bfa});
+    const z1 = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,0.02), zMat);
+    z1.position.set(0.3, 0.7, 0.5); z1.rotation.z = 0.3;
+    group.add(z1);
+  } else if (avatar.eyes === 'star') {
+    [-0.18, 0.18].forEach(x => {
+      const star = new THREE.Mesh(new THREE.SphereGeometry(0.1,5,4), eyeMat);
+      star.position.set(x, 0.45, 0.5);
+      star.rotation.z = Math.PI/5;
+      group.add(star);
+    });
+  } else if (avatar.eyes === 'heart') {
+    [-0.18, 0.18].forEach(x => {
+      const h1 = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6), eyeMat);
+      h1.position.set(x-0.03, 0.48, 0.52);
+      group.add(h1);
+      const h2 = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6), eyeMat);
+      h2.position.set(x+0.03, 0.48, 0.52);
+      group.add(h2);
+      const h3 = new THREE.Mesh(new THREE.ConeGeometry(0.07,0.1,8), eyeMat);
+      h3.position.set(x, 0.39, 0.52);
+      h3.rotation.x = Math.PI;
+      group.add(h3);
+    });
+  } else if (avatar.eyes === 'cyclops') {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), eyeMat);
+    eye.position.set(0, 0.45, 0.5);
+    group.add(eye);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6), new THREE.MeshBasicMaterial({color:0xffffff}));
+    pupil.position.set(0.03, 0.47, 0.6);
+    group.add(pupil);
   } else {
     // Normal/Cool eyes
     const eSize = avatar.eyes === 'cool' ? 0.11 : 0.09;
@@ -1239,13 +1307,11 @@ function createGhostMesh(avatar) {
       const eye = new THREE.Mesh(new THREE.SphereGeometry(eSize, 12, 8), eyeMat);
       eye.position.set(x, 0.45, 0.5);
       group.add(eye);
-      // Pupil/white for normal
       if (avatar.eyes === 'normal') {
         const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.04,8,6), new THREE.MeshBasicMaterial({color:0xffffff}));
         pupil.position.set(x+0.02, 0.47, 0.56);
         group.add(pupil);
       }
-      // Cool eyes get a shine
       if (avatar.eyes === 'cool') {
         const shine = new THREE.Mesh(new THREE.SphereGeometry(0.04,8,6), new THREE.MeshBasicMaterial({color:0xffffff}));
         shine.position.set(x+0.03, 0.48, 0.58);
@@ -1292,6 +1358,75 @@ function createGhostMesh(avatar) {
     brim.position.set(0, 0.88, 0.15);
     brim.rotation.y = Math.PI;
     group.add(brim);
+  } else if (avatar.hat === 'tophat') {
+    const thMat = new THREE.MeshPhongMaterial({color:0x1a1a2e, emissive:0x111111, emissiveIntensity:0.1});
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.6, 16), thMat);
+    top.position.y = 1.25;
+    group.add(top);
+    const brim2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.04, 16), thMat);
+    brim2.position.y = 0.96;
+    group.add(brim2);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.06, 16), new THREE.MeshPhongMaterial({color:0x7c3aed}));
+    band.position.y = 1.05;
+    group.add(band);
+  } else if (avatar.hat === 'pirate') {
+    const pirMat = new THREE.MeshPhongMaterial({color:0x1a1a1a});
+    const pirBase = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 8, 0, Math.PI*2, 0, Math.PI/2), pirMat);
+    pirBase.position.y = 0.95;
+    group.add(pirBase);
+    const skull2 = new THREE.Mesh(new THREE.SphereGeometry(0.08,8,6), new THREE.MeshBasicMaterial({color:0xffffff}));
+    skull2.position.set(0, 1.15, 0.35);
+    group.add(skull2);
+  } else if (avatar.hat === 'halo') {
+    const haloMat = new THREE.MeshPhongMaterial({color:0xfbbf24, emissive:0xfbbf24, emissiveIntensity:0.6, transparent:true, opacity:0.8});
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.04, 8, 24), haloMat);
+    halo.position.y = 1.3;
+    halo.rotation.x = Math.PI/2;
+    group.add(halo);
+  } else if (avatar.hat === 'viking') {
+    const vikMat = new THREE.MeshPhongMaterial({color:0x8B7355});
+    const vikBase = new THREE.Mesh(new THREE.SphereGeometry(0.38, 12, 8, 0, Math.PI*2, 0, Math.PI/2), vikMat);
+    vikBase.position.y = 0.95;
+    group.add(vikBase);
+    const hornMat = new THREE.MeshPhongMaterial({color:0xfde68a, emissive:0xfbbf24, emissiveIntensity:0.1});
+    [-1,1].forEach(s => {
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.4, 8), hornMat);
+      horn.position.set(s*0.35, 1.15, 0);
+      horn.rotation.z = s * 0.5;
+      group.add(horn);
+    });
+  } else if (avatar.hat === 'chef') {
+    const chefMat = new THREE.MeshPhongMaterial({color:0xffffff, emissive:0xffffff, emissiveIntensity:0.1});
+    const chefBase = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.15, 16), chefMat);
+    chefBase.position.y = 1.0;
+    group.add(chefBase);
+    const puff = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), chefMat);
+    puff.position.y = 1.25;
+    group.add(puff);
+  } else if (avatar.hat === 'party') {
+    const partyMat = new THREE.MeshPhongMaterial({color:0xf43f5e, emissive:0xec4899, emissiveIntensity:0.2});
+    const cone2 = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.6, 12), partyMat);
+    cone2.position.y = 1.25;
+    group.add(cone2);
+    const pompom = new THREE.Mesh(new THREE.SphereGeometry(0.08,8,6), new THREE.MeshPhongMaterial({color:0xfbbf24,emissive:0xfbbf24,emissiveIntensity:0.4}));
+    pompom.position.y = 1.58;
+    group.add(pompom);
+  } else if (avatar.hat === 'ninja') {
+    const ninMat = new THREE.MeshPhongMaterial({color:0x1a1a2e, emissive:0x111111, emissiveIntensity:0.1});
+    const mask = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 12, 0, Math.PI*2, 0, Math.PI*0.6), ninMat);
+    mask.position.y = 0.7;
+    group.add(mask);
+    const band2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.06), new THREE.MeshPhongMaterial({color:0xef4444}));
+    band2.position.set(0, 0.55, -0.3);
+    group.add(band2);
+  } else if (avatar.hat === 'astronaut') {
+    const helmMat = new THREE.MeshPhongMaterial({color:0xd1d5db, emissive:0x9ca3af, emissiveIntensity:0.1, transparent:true, opacity:0.5});
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 12), helmMat);
+    helmet.position.y = 0.5;
+    group.add(helmet);
+    const visor = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8, 0, Math.PI, 0, Math.PI/2), new THREE.MeshPhongMaterial({color:0x3b82f6, emissive:0x2563eb, emissiveIntensity:0.3, transparent:true, opacity:0.7}));
+    visor.position.set(0, 0.5, 0.25);
+    group.add(visor);
   }
 
   // Accessories
@@ -1326,6 +1461,82 @@ function createGhostMesh(avatar) {
       wing.rotation.x = -0.2;
       group.add(wing);
     });
+  } else if (avatar.acc === 'bowtie') {
+    const btMat = new THREE.MeshPhongMaterial({color:0xef4444, emissive:0xdc2626, emissiveIntensity:0.2});
+    [-1,1].forEach(s => {
+      const tri = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.15, 4), btMat);
+      tri.position.set(s*0.08, 0.05, 0.5);
+      tri.rotation.z = s * Math.PI/2;
+      group.add(tri);
+    });
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.04,6,4), btMat);
+    knot.position.set(0, 0.05, 0.52);
+    group.add(knot);
+  } else if (avatar.acc === 'scarf') {
+    const scarfMat = new THREE.MeshPhongMaterial({color:0x3b82f6, emissive:0x2563eb, emissiveIntensity:0.15});
+    const scarfWrap = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.08, 8, 16), scarfMat);
+    scarfWrap.position.y = -0.05;
+    scarfWrap.rotation.x = Math.PI/2;
+    group.add(scarfWrap);
+    const tail2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.06), scarfMat);
+    tail2.position.set(0.3, -0.2, 0.3);
+    tail2.rotation.z = -0.3;
+    group.add(tail2);
+  } else if (avatar.acc === 'sword') {
+    const bladeMat = new THREE.MeshPhongMaterial({color:0xd1d5db, emissive:0x9ca3af, emissiveIntensity:0.3});
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.02), bladeMat);
+    blade.position.set(0.55, 0.2, 0);
+    group.add(blade);
+    const hilt = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.06), new THREE.MeshPhongMaterial({color:0xfbbf24}));
+    hilt.position.set(0.55, -0.12, 0);
+    group.add(hilt);
+  } else if (avatar.acc === 'shield') {
+    const shieldMat = new THREE.MeshPhongMaterial({color:0x6d28d9, emissive:0x4c1d95, emissiveIntensity:0.2});
+    const shieldMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.25, 0.06, 6), shieldMat);
+    shieldMesh.position.set(-0.55, 0.15, 0.1);
+    shieldMesh.rotation.z = Math.PI/2;
+    group.add(shieldMesh);
+    const emblem = new THREE.Mesh(new THREE.SphereGeometry(0.08,6,4), new THREE.MeshPhongMaterial({color:0xfbbf24,emissive:0xfbbf24,emissiveIntensity:0.3}));
+    emblem.position.set(-0.55, 0.15, 0.15);
+    group.add(emblem);
+  } else if (avatar.acc === 'tail') {
+    const tailMat = new THREE.MeshPhongMaterial({color:col, emissive:col, emissiveIntensity:0.2});
+    const t1 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.03, 0.5, 8), tailMat);
+    t1.position.set(0, -0.5, -0.4);
+    t1.rotation.x = 0.8;
+    group.add(t1);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6), tailMat);
+    tip.position.set(0, -0.65, -0.7);
+    group.add(tip);
+  } else if (avatar.acc === 'aura') {
+    const auraMat = new THREE.MeshPhongMaterial({color:0xa78bfa, emissive:0x8b5cf6, emissiveIntensity:0.5, transparent:true, opacity:0.2});
+    const aura = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 12), auraMat);
+    aura.position.y = 0.2;
+    group.add(aura);
+    const auraMat2 = new THREE.MeshPhongMaterial({color:0xc084fc, emissive:0xa855f7, emissiveIntensity:0.4, transparent:true, opacity:0.1});
+    const aura2 = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 10), auraMat2);
+    aura2.position.y = 0.2;
+    group.add(aura2);
+  } else if (avatar.acc === 'headphones') {
+    const hpMat = new THREE.MeshPhongMaterial({color:0x333333});
+    const band3 = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.03, 8, 16, Math.PI), hpMat);
+    band3.position.y = 0.85;
+    band3.rotation.x = 0;
+    group.add(band3);
+    [-0.33,0.33].forEach(x => {
+      const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.08, 12), new THREE.MeshPhongMaterial({color:0x7c3aed, emissive:0x6d28d9, emissiveIntensity:0.2}));
+      ear.position.set(x, 0.5, 0);
+      ear.rotation.z = Math.PI/2;
+      group.add(ear);
+    });
+  } else if (avatar.acc === 'backpack') {
+    const bpMat = new THREE.MeshPhongMaterial({color:0x059669, emissive:0x047857, emissiveIntensity:0.15});
+    const pack = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.45, 0.2), bpMat);
+    pack.position.set(0, 0.1, -0.55);
+    group.add(pack);
+    const flap = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.12, 0.04), new THREE.MeshPhongMaterial({color:0x047857}));
+    flap.position.set(0, 0.3, -0.46);
+    group.add(flap);
   }
 
   return group;
